@@ -1,0 +1,313 @@
+# System Context
+
+You are building a multi-agent AI workflow system using LangChain and LangGraph to create animated moral story videos for children. This is a production-grade application that requires robust error handling, modular architecture, and scalable design.
+
+# Project Requirements
+
+## Core Objective
+Build an agentic AI workflow with multiple specialized agents that collaborate to transform a story context into a complete animated moral video for children.
+
+## Technology Stack
+- **Framework**: LangChain for agent orchestration
+- **Workflow Engine**: LangGraph for state management and agent coordination
+- **Language**: Python 3.10+
+- **LLM Provider**: OpenAI GPT-4 (configurable for other providers)
+
+# Architecture Overview
+
+Create a multi-agent system with the following components:
+
+## 1. State Management
+Design a LangGraph state schema that tracks:
+- Input context and parameters
+- Web search results
+- Generated story content
+- Script segments with timestamps
+- Character descriptions and image URLs
+- Video segments and final output path
+- Error states and retry counts
+
+## 2. Agent Definitions
+
+### Agent 1: Context Analyzer Agent
+**Role**: Process and validate input context
+**Responsibilities**:
+- Parse input context (story theme, characters, moral lesson, age group)
+- Extract key elements: setting, character traits, moral objective
+- Validate completeness of input
+- Generate search queries for knowledge enrichment
+**Output**: Structured context object with search queries
+
+### Agent 2: Web Research Agent
+**Role**: Gather supplementary information
+**Responsibilities**:
+- Execute web searches based on context (moral themes, cultural references, age-appropriate content)
+- Filter and curate relevant information
+- Summarize findings into usable knowledge base
+**Tools**: 
+- Web search API (Tavily, SerpAPI, or similar)
+- Content filtering for child-safety
+**Output**: Curated research summary
+
+### Agent 3: Story Generation Agent
+**Role**: Create engaging moral stories
+**Responsibilities**:
+- Generate age-appropriate narrative using context + research
+- Incorporate specified characters with distinct personalities
+- Weave moral lesson naturally into plot
+- Ensure story structure (beginning, conflict, resolution)
+- Maintain 3-5 minute read length for video conversion
+**Output**: Complete story with clear moral message
+
+### Agent 4: Script Segmentation Agent
+**Role**: Break story into visual scenes
+**Responsibilities**:
+- Divide story into 8-12 scene segments
+- Create detailed scene descriptions with:
+  - Character actions and emotions
+  - Setting details
+  - Dialogue or narration text
+  - Scene duration (4-8 seconds each)
+- Ensure visual continuity between scenes
+**Output**: Array of scene objects with descriptions and metadata
+
+### Agent 5: Character Design Agent
+**Role**: Generate consistent character visuals
+**Responsibilities**:
+- Create detailed character design prompts based on story context
+- Generate character reference sheets for consistency
+- Produce scene-specific character images with:
+  - Consistent style (cartoon, 2D animation, etc.)
+  - Appropriate expressions and poses for each scene
+  - Child-friendly visual aesthetics
+**Tools**: 
+- DALL-E 3, Stable Diffusion, or Midjourney API
+- Image consistency techniques (ControlNet, IP-Adapter)
+**Output**: Character images for each scene (PNG format, 1920x1080)
+
+### Agent 6: Video Assembly Agent
+**Role**: Compile media into final video
+**Responsibilities**:
+- Stitch scene images into video sequence
+- Add scene transitions (cross-fade, gentle animations)
+- Overlay narration text or generate voiceover
+- Add background music (royalty-free, child-appropriate)
+- Include moral message as end card
+**Tools**: 
+- MoviePy or FFmpeg for video processing
+- Text-to-speech for narration (ElevenLabs, gTTS)
+**Output**: Final MP4 video file (720p or 1080p)
+
+## 3. LangGraph Workflow Design
+
+Structure the workflow as a directed graph with the following nodes:
+```python
+# Pseudo-structure for LangGraph
+START → context_analyzer → web_research → story_generator → script_segmenter → character_designer → video_assembler → END
+
+# Include conditional edges for:
+- Error handling and retries
+- Quality validation checkpoints
+- Human-in-the-loop approval (optional)
+```
+
+# Detailed Implementation Requirements
+
+## Input Schema
+```python
+{
+    "context": {
+        "theme": str,  # e.g., "honesty", "friendship", "courage"
+        "characters": [
+            {
+                "name": str,
+                "type": str,  # "animal", "human", "fantasy"
+                "traits": [str]
+            }
+        ],
+        "setting": str,  # e.g., "forest", "village", "school"
+        "moral_lesson": str,
+        "age_group": str,  # "3-5", "6-8", "9-12"
+        "duration_minutes": int  # target video length
+    },
+    "preferences": {
+        "art_style": str,  # "cartoon", "watercolor", "3D"
+        "narration": bool,  # include voice narration
+        "music": bool
+    }
+}
+```
+
+## Code Structure Requirements
+
+### 1. Project Organization
+```
+project_root/
+├── agents/
+│   ├── __init__.py
+│   ├── context_analyzer.py
+│   ├── web_researcher.py
+│   ├── story_generator.py
+│   ├── script_segmenter.py
+│   ├── character_designer.py
+│   └── video_assembler.py
+├── graph/
+│   ├── __init__.py
+│   ├── state.py
+│   ├── workflow.py
+│   └── nodes.py
+├── tools/
+│   ├── __init__.py
+│   ├── search_tool.py
+│   ├── image_gen_tool.py
+│   └── video_tool.py
+├── utils/
+│   ├── __init__.py
+│   ├── validators.py
+│   └── helpers.py
+├── config.py
+├── main.py
+└── requirements.txt
+```
+
+### 2. State Management with LangGraph
+- Implement TypedDict for state schema
+- Use annotations for state updates
+- Include checkpointing for long-running workflows
+
+### 3. Agent Implementation Pattern
+For each agent, include:
+- Clear system prompts with role definition
+- Tool bindings where applicable
+- Structured output parsing
+- Error handling and validation
+- Logging for observability
+
+### 4. Error Handling
+- Retry logic with exponential backoff
+- Graceful degradation (e.g., skip web search if API fails)
+- Validation checkpoints between agents
+- Clear error messages for debugging
+
+### 5. Configuration Management
+- Environment variables for API keys
+- Configurable LLM parameters (temperature, model selection)
+- Adjustable quality/speed trade-offs
+- Output path configuration
+
+## Code Generation Instructions
+
+Generate complete, production-ready code that includes:
+
+1. **Main workflow file** (`main.py`):
+   - CLI interface for running the workflow
+   - Input validation
+   - Progress tracking and logging
+   - Output management
+
+2. **State definition** (`graph/state.py`):
+   - Comprehensive state schema using TypedDict
+   - State transition annotations
+
+3. **LangGraph workflow** (`graph/workflow.py`):
+   - Complete graph construction
+   - Node definitions for each agent
+   - Edge conditions and routing logic
+   - Compilation and execution logic
+
+4. **All agent implementations** (`agents/*.py`):
+   - Full agent class definitions
+   - LangChain integration
+   - Tool usage examples
+   - Prompt templates
+
+5. **Tool implementations** (`tools/*.py`):
+   - Web search integration
+   - Image generation wrapper
+   - Video processing utilities
+
+6. **Requirements file** (`requirements.txt`):
+   - All necessary dependencies with version pinning
+
+7. **Configuration file** (`config.py`):
+   - Environment variable management
+   - Default parameters
+
+8. **README.md**:
+   - Setup instructions
+   - Usage examples
+   - API key requirements
+   - Troubleshooting guide
+
+## Quality Requirements
+
+- **Code Style**: Follow PEP 8, include type hints
+- **Documentation**: Docstrings for all classes and functions
+- **Testing**: Include example usage and edge case handling
+- **Child Safety**: Implement content filtering at every stage
+- **Performance**: Async operations where possible, caching for repeated operations
+- **Observability**: Structured logging with log levels
+
+## Example Usage Pattern
+```python
+from main import MoralVideoWorkflow
+
+# Initialize workflow
+workflow = MoralVideoWorkflow(config_path="config.yaml")
+
+# Define input
+input_context = {
+    "context": {
+        "theme": "honesty",
+        "characters": [
+            {"name": "Leo", "type": "animal", "traits": ["brave", "curious"]},
+            {"name": "Mia", "type": "animal", "traits": ["wise", "kind"]}
+        ],
+        "setting": "magical forest",
+        "moral_lesson": "Honesty is the best policy, even when it's hard",
+        "age_group": "6-8",
+        "duration_minutes": 3
+    },
+    "preferences": {
+        "art_style": "cartoon",
+        "narration": True,
+        "music": True
+    }
+}
+
+# Execute workflow
+result = workflow.run(input_context)
+
+# Output: {"video_path": "output/moral_video_123.mp4", "metadata": {...}}
+```
+
+## Additional Considerations
+
+- Implement rate limiting for external API calls
+- Add progress callbacks for long-running operations
+- Support for multiple output formats (MP4, WebM)
+- Optional human approval checkpoints
+- Batch processing capability for multiple stories
+- Cost estimation before execution
+
+# Success Criteria
+
+The generated code should:
+1. Successfully execute all workflow steps end-to-end
+2. Produce a coherent, age-appropriate moral story video
+3. Maintain character consistency across scenes
+4. Complete execution in under 10 minutes (with appropriate API access)
+5. Handle errors gracefully without crashing
+6. Be modular enough for easy agent replacement or modification
+
+# Deliverables
+
+Generate fully functional Python code with:
+- All agent implementations
+- Complete LangGraph workflow
+- Tool integrations
+- Configuration management
+- Documentation and examples
+- Error handling and logging
+
+The code should be ready to run after installing dependencies and adding API keys.

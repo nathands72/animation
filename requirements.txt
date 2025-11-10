@@ -1,0 +1,44 @@
+# Core LangChain and LangGraph
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langgraph>=0.0.20
+langchain-community>=0.0.20
+
+# LLM Provider
+openai>=1.12.0
+
+# Web Search
+tavily-python>=0.3.0
+google-search-results>=2.4.2  # For SerpAPI fallback
+
+# Image Processing
+Pillow>=10.2.0
+requests>=2.31.0
+
+# Video Processing
+moviepy>=1.0.3
+imageio>=2.33.0
+imageio-ffmpeg>=0.4.9
+
+# Text-to-Speech
+gtts>=2.5.0
+elevenlabs>=0.2.27  # Optional
+
+# Audio Processing
+pydub>=0.25.1
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+typing-extensions>=4.9.0
+
+# Logging and Monitoring
+structlog>=24.1.0
+
+# HTTP Client
+httpx>=0.26.0
+
+# Date/Time
+python-dateutil>=2.8.2
+
+

@@ -1,0 +1,26 @@
+{
+    "context": {
+      "theme": "honesty",
+      "characters": [
+        {
+          "name": "Leo",
+          "type": "animal",
+          "traits": ["brave", "curious"]
+        },
+        {
+          "name": "Mia",
+          "type": "animal",
+          "traits": ["wise", "kind"]
+        }
+      ],
+      "setting": "magical forest",
+      "moral_lesson": "Honesty is the best policy, even when it's hard",
+      "age_group": "6-8",
+      "duration_minutes": 3
+    },
+    "preferences": {
+      "art_style": "cartoon",
+      "narration": true,
+      "music": true
+    }
+  }
