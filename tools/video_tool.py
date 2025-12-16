@@ -8,6 +8,10 @@ import tempfile
 
 from config import get_config
 from utils.helpers import get_temp_path, get_output_path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
