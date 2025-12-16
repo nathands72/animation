@@ -144,7 +144,7 @@ class VideoProcessingTool:
             
             # Determine output path
             if output_path is None:
-                output_path = get_temp_path("video_segment.mp4")
+                output_path = get_temp_path("video_segment.mp4", "video")
             
             # Write video
             logger.info(f"Writing video to: {output_path}")
