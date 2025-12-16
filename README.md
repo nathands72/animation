@@ -6,6 +6,7 @@ A production-grade multi-agent AI workflow system using LangChain and LangGraph 
 
 - **Multi-Agent Architecture**: Six specialized agents working together
 - **LangGraph Workflow**: State management and agent coordination
+- **Checkpoint & Resume**: Automatic progress saving and resume from any step
 - **Child-Safe Content**: Content filtering at every stage
 - **Error Handling**: Comprehensive retry logic and graceful degradation
 - **Modular Design**: Easy to replace or modify agents
@@ -121,12 +122,19 @@ python main.py --input input.json
 python main.py [OPTIONS]
 
 Options:
-  -i, --input PATH       Path to input JSON file
-  -o, --output PATH      Output directory (default: output/)
-  --log-level LEVEL      Logging level (DEBUG, INFO, WARNING, ERROR)
-  --log-file PATH        Path to log file
-  --workflow-id ID       Optional workflow ID for tracking
-  --estimate-cost        Estimate cost before execution
+  -i, --input PATH            Path to input JSON file
+  -o, --output PATH           Output directory (default: output/)
+  --log-level LEVEL           Logging level (DEBUG, INFO, WARNING, ERROR)
+  --log-file PATH             Path to log file
+  --workflow-id ID            Workflow ID for tracking and checkpointing
+  --estimate-cost             Estimate cost before execution
+  
+  Checkpoint & Resume:
+  --resume                    Resume from latest checkpoint
+  --resume-from-step STEP     Resume from specific step
+  --checkpoint-path PATH      Resume from specific checkpoint file
+  --list-checkpoints          List available checkpoints
+  --no-checkpoint             Disable automatic checkpointing
 ```
 
 ### Example Commands
@@ -135,11 +143,23 @@ Options:
 # Run with input file and custom output directory
 python main.py -i story.json -o videos/
 
+# Run with workflow ID (enables checkpointing)
+python main.py -i story.json --workflow-id my-video-001
+
 # Run with debug logging
 python main.py -i story.json --log-level DEBUG --log-file workflow.log
 
 # Estimate cost before execution
 python main.py -i story.json --estimate-cost
+
+# Resume from latest checkpoint
+python main.py --workflow-id my-video-001 --resume
+
+# Resume from specific step
+python main.py --workflow-id my-video-001 --resume-from-step story_generator
+
+# List available checkpoints
+python main.py --workflow-id my-video-001 --list-checkpoints
 ```
 
 ## Input Schema
@@ -183,7 +203,10 @@ project_root/
 │   └── video_tool.py
 ├── utils/               # Utilities
 │   ├── validators.py
-│   └── helpers.py
+│   ├── helpers.py
+│   └── checkpoint_manager.py
+├── docs/                # Documentation
+│   └── checkpointing.md
 ├── config.py            # Configuration management
 ├── main.py              # Main entry point
 └── requirements.txt     # Dependencies
@@ -212,6 +235,62 @@ Configuration is managed through `config.py` and environment variables. Key sett
   - Get from: https://tavily.com/
 - **ElevenLabs API Key**: For high-quality TTS (falls back to gTTS if not provided)
   - Get from: https://elevenlabs.io/
+
+## Checkpoint and Resume
+
+The system automatically saves progress after each step, allowing you to resume from any point.
+
+### Automatic Checkpointing
+
+Checkpoints are automatically saved when using `--workflow-id`:
+
+```bash
+python main.py -i story.json --workflow-id my-video-001
+```
+
+Checkpoints are saved to `temp/checkpoints/{workflow_id}/` and include:
+- Full workflow state at each step
+- Intermediate outputs (story text, images, etc.)
+- Metadata and timestamps
+
+### Resume from Latest Checkpoint
+
+If your workflow is interrupted or fails:
+
+```bash
+python main.py --workflow-id my-video-001 --resume
+```
+
+### Resume from Specific Step
+
+To restart from a particular step (e.g., to regenerate the video):
+
+```bash
+python main.py --workflow-id my-video-001 --resume-from-step video_assembler
+```
+
+Available steps:
+- `context_analyzer`
+- `web_researcher`
+- `story_generator`
+- `script_segmenter`
+- `character_designer`
+- `video_assembler`
+
+### List Checkpoints
+
+```bash
+python main.py --workflow-id my-video-001 --list-checkpoints
+```
+
+### Benefits
+
+- **Cost Savings**: Avoid re-running expensive API calls after failures
+- **Faster Iteration**: Restart from specific steps when tweaking later stages
+- **Error Recovery**: Automatic recovery from interruptions
+- **Debugging**: Inspect intermediate outputs at each step
+
+For complete documentation, see [docs/checkpointing.md](docs/checkpointing.md).
 
 ## Cost Estimation
 
@@ -255,6 +334,11 @@ Typical costs per video:
    - Reduce number of scenes
    - Lower image resolution
    - Process in smaller batches
+
+6. **Workflow interrupted**
+   - Use `--resume` to continue from last checkpoint
+   - Check `temp/checkpoints/{workflow_id}/` for saved progress
+   - Use `--list-checkpoints` to see available checkpoints
 
 ### Debug Mode
 

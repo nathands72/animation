@@ -135,7 +135,9 @@ def run_workflow_with_callbacks(
     input_context: Dict[str, Any],
     input_preferences: Dict[str, Any],
     progress_callback: Optional[callable] = None,
-    workflow_id: Optional[str] = None
+    workflow_id: Optional[str] = None,
+    resume_state: Optional[Dict[str, Any]] = None,
+    resume_from_step: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Run workflow with progress callbacks.
@@ -145,6 +147,8 @@ def run_workflow_with_callbacks(
         input_preferences: Input preferences dictionary
         progress_callback: Optional callback function(state) -> None
         workflow_id: Optional workflow ID
+        resume_state: Optional state to resume from (loaded from checkpoint)
+        resume_from_step: Optional step name to resume from
         
     Returns:
         Final state dictionary
@@ -154,12 +158,25 @@ def run_workflow_with_callbacks(
     # Create workflow
     workflow = create_workflow()
     
-    # Create initial state
-    initial_state = create_initial_state(
-        input_context=input_context,
-        input_preferences=input_preferences,
-        workflow_id=workflow_id
-    )
+    # Create or restore initial state
+    if resume_state:
+        # Use resumed state
+        initial_state = resume_state
+        logger.info(f"Resuming from checkpoint (step: {resume_from_step})")
+        
+        # Note: LangGraph doesn't support skipping nodes directly in a linear workflow
+        # The workflow will re-execute from the beginning, but nodes can check
+        # if their output already exists in state and skip processing
+        # For now, we'll start from beginning with the resumed state
+        # A more advanced implementation would use conditional edges
+        
+    else:
+        # Create fresh initial state
+        initial_state = create_initial_state(
+            input_context=input_context,
+            input_preferences=input_preferences,
+            workflow_id=workflow_id
+        )
     
     # Run workflow with callbacks
     config = get_config()

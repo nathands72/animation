@@ -2,6 +2,7 @@
 
 import logging
 import time
+import json
 from typing import Dict, Any
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from agents.script_segmenter import ScriptSegmentationAgent
 from agents.character_designer import CharacterDesignAgent
 from agents.video_assembler import VideoAssemblyAgent
 from config import get_config
+from utils.checkpoint_manager import save_checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,17 @@ def context_analyzer_node(state: MoralVideoState) -> Dict[str, Any]:
     try:
         logger.info("Executing context analyzer node")
         
+        # Check if output already exists in state (from checkpoint)
+        if state.get("validated_context") and state.get("search_queries"):
+            logger.info("Context analyzer output found in state, skipping execution")
+            return {
+                "current_agent": "context_analyzer",
+                "progress": 0.1,
+                "validated_context": state.get("validated_context"),
+                "search_queries": state.get("search_queries"),
+                "last_completed_step": "context_analyzer",
+            }
+        
         # Update progress
         progress_update = update_progress(state, "context_analyzer", 0.1)
         
@@ -50,11 +63,40 @@ def context_analyzer_node(state: MoralVideoState) -> Dict[str, Any]:
         # Extract search queries
         search_queries = validated_context.get("search_queries", [])
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "validated_context": validated_context,
             "search_queries": search_queries,
+            "last_completed_step": "context_analyzer",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save intermediate outputs
+            with open(workflow_checkpoint_dir / "01_validated_context.json", 'w') as f:
+                json.dump(validated_context, f, indent=2)
+            
+            with open(workflow_checkpoint_dir / "01_search_queries.json", 'w') as f:
+                json.dump(search_queries, f, indent=2)
+            
+            # Save checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="context_analyzer",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in context analyzer node: {e}")
@@ -81,6 +123,17 @@ def web_researcher_node(state: MoralVideoState) -> Dict[str, Any]:
     try:
         logger.info("Executing web researcher node")
         
+        # Check if output already exists in state (from checkpoint)
+        if state.get("research_results") is not None and state.get("research_summary") is not None:
+            logger.info("Web researcher output found in state, skipping execution")
+            return {
+                "current_agent": "web_researcher",
+                "progress": 0.2,
+                "research_results": state.get("research_results"),
+                "research_summary": state.get("research_summary"),
+                "last_completed_step": "web_researcher",
+            }
+        
         # Update progress
         progress_update = update_progress(state, "web_researcher", 0.2)
         
@@ -104,11 +157,40 @@ def web_researcher_node(state: MoralVideoState) -> Dict[str, Any]:
             age_group=age_group
         )
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "research_results": research_results.get("research_results", {}),
             "research_summary": research_results.get("research_summary", ""),
+            "last_completed_step": "web_researcher",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save intermediate outputs
+            with open(workflow_checkpoint_dir / "02_research_results.json", 'w') as f:
+                json.dump(result["research_results"], f, indent=2)
+            
+            with open(workflow_checkpoint_dir / "02_research_summary.txt", 'w') as f:
+                f.write(result["research_summary"])
+            
+            # Save checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="web_researcher",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in web researcher node: {e}")
@@ -139,6 +221,17 @@ def story_generator_node(state: MoralVideoState) -> Dict[str, Any]:
     try:
         logger.info("Executing story generator node")
         
+        # Check if output already exists in state (from checkpoint)
+        if state.get("generated_story") and state.get("story_metadata"):
+            logger.info("Story generator output found in state, skipping execution")
+            return {
+                "current_agent": "story_generator",
+                "progress": 0.35,
+                "generated_story": state.get("generated_story"),
+                "story_metadata": state.get("story_metadata"),
+                "last_completed_step": "story_generator",
+            }
+        
         # Update progress
         progress_update = update_progress(state, "story_generator", 0.35)
         
@@ -152,11 +245,40 @@ def story_generator_node(state: MoralVideoState) -> Dict[str, Any]:
             research_summary=research_summary
         )
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "generated_story": story_result.get("story", ""),
             "story_metadata": story_result.get("metadata", {}),
+            "last_completed_step": "story_generator",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save intermediate outputs
+            with open(workflow_checkpoint_dir / "03_story.txt", 'w', encoding='utf-8') as f:
+                f.write(result["generated_story"])
+            
+            with open(workflow_checkpoint_dir / "03_story_metadata.json", 'w') as f:
+                json.dump(result["story_metadata"], f, indent=2)
+            
+            # Save checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="story_generator",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in story generator node: {e}")
@@ -183,6 +305,16 @@ def script_segmenter_node(state: MoralVideoState) -> Dict[str, Any]:
     try:
         logger.info("Executing script segmenter node")
         
+        # Check if output already exists in state (from checkpoint)
+        if state.get("script_segments"):
+            logger.info("Script segmenter output found in state, skipping execution")
+            return {
+                "current_agent": "script_segmenter",
+                "progress": 0.5,
+                "script_segments": state.get("script_segments"),
+                "last_completed_step": "script_segmenter",
+            }
+        
         # Update progress
         progress_update = update_progress(state, "script_segmenter", 0.5)
         
@@ -201,10 +333,36 @@ def script_segmenter_node(state: MoralVideoState) -> Dict[str, Any]:
             target_duration_minutes=target_duration
         )
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "script_segments": segments,
+            "last_completed_step": "script_segmenter",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save intermediate outputs
+            with open(workflow_checkpoint_dir / "04_script_segments.json", 'w') as f:
+                json.dump(segments, f, indent=2)
+            
+            # Save checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="script_segmenter",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in script segmenter node: {e}")
@@ -230,6 +388,17 @@ def character_designer_node(state: MoralVideoState) -> Dict[str, Any]:
     
     try:
         logger.info("Executing character designer node")
+        
+        # Check if output already exists in state (from checkpoint)
+        if state.get("character_descriptions") and state.get("scene_images"):
+            logger.info("Character designer output found in state, skipping execution")
+            return {
+                "current_agent": "character_designer",
+                "progress": 0.65,
+                "character_descriptions": state.get("character_descriptions"),
+                "scene_images": state.get("scene_images"),
+                "last_completed_step": "character_designer",
+            }
         
         # Update progress
         progress_update = update_progress(state, "character_designer", 0.65)
@@ -262,11 +431,41 @@ def character_designer_node(state: MoralVideoState) -> Dict[str, Any]:
         # Convert Path objects to strings for state
         scene_images_str = [str(img) if img else None for img in scene_images]
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "character_descriptions": character_descriptions,
             "scene_images": scene_images_str,
+            "last_completed_step": "character_designer",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Save intermediate outputs
+            with open(workflow_checkpoint_dir / "05_character_descriptions.json", 'w') as f:
+                json.dump(character_descriptions, f, indent=2)
+            
+            # Scene images are already saved to temp/images, just document paths
+            with open(workflow_checkpoint_dir / "05_scene_image_paths.json", 'w') as f:
+                json.dump(scene_images_str, f, indent=2)
+            
+            # Save checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="character_designer",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in character designer node: {e}")
@@ -292,6 +491,17 @@ def video_assembler_node(state: MoralVideoState) -> Dict[str, Any]:
     
     try:
         logger.info("Executing video assembler node")
+        
+        # Check if output already exists in state (from checkpoint)
+        if state.get("final_video_path") and state.get("status") == "completed":
+            logger.info("Video assembler output found in state, skipping execution")
+            return {
+                "current_agent": "video_assembler",
+                "progress": 1.0,
+                "final_video_path": state.get("final_video_path"),
+                "status": "completed",
+                "last_completed_step": "video_assembler",
+            }
         
         # Update progress
         progress_update = update_progress(state, "video_assembler", 0.9)
@@ -332,12 +542,44 @@ def video_assembler_node(state: MoralVideoState) -> Dict[str, Any]:
         if not final_video_path:
             raise ValueError("Failed to assemble video")
         
-        return {
+        # Prepare result
+        result = {
             **progress_update,
             "final_video_path": str(final_video_path),
             "status": "completed",
             "progress": 1.0,
+            "last_completed_step": "video_assembler",
         }
+        
+        # Save checkpoint if enabled
+        if config.enable_auto_checkpoint:
+            workflow_id_str = state.get("workflow_id", "default")
+            workflow_checkpoint_dir = config.paths.checkpoint_dir / workflow_id_str
+            workflow_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Document final video path and any audio paths
+            output_info = {
+                "final_video_path": str(final_video_path),
+                "narration_audio": state.get("narration_audio"),
+                "background_music": state.get("background_music"),
+            }
+            
+            with open(workflow_checkpoint_dir / "06_final_output.json", 'w') as f:
+                json.dump(output_info, f, indent=2)
+            
+            # Save final checkpoint
+            merged_state = {**state, **result}
+            checkpoint_path = save_checkpoint(
+                state=merged_state,
+                step_name="video_assembler",
+                checkpoint_dir=config.paths.checkpoint_dir,
+                workflow_id=workflow_id_str,
+                retention_count=config.checkpoint_retention_count
+            )
+            result["checkpoint_path"] = str(checkpoint_path)
+            logger.info(f"Final checkpoint saved: {checkpoint_path}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error in video assembler node: {e}")

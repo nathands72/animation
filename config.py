@@ -118,6 +118,7 @@ class PathConfig:
     temp_dir: Path = field(default_factory=lambda: Path("temp"))
     images_dir: Path = field(default_factory=lambda: Path("temp/images"))
     audio_dir: Path = field(default_factory=lambda: Path("temp/audio"))
+    checkpoint_dir: Path = field(default_factory=lambda: Path("temp/checkpoints"))
     
     def __post_init__(self):
         """Create directories if they don't exist."""
@@ -125,6 +126,7 @@ class PathConfig:
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.audio_dir.mkdir(parents=True, exist_ok=True)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
@@ -144,6 +146,10 @@ class WorkflowConfig:
     enable_progress_callbacks: bool = True
     max_workflow_duration: int = 600  # 10 minutes in seconds
     enable_human_approval: bool = False  # Optional human-in-the-loop
+    
+    # Checkpoint settings
+    enable_auto_checkpoint: bool = True  # Automatically save checkpoints after each step
+    checkpoint_retention_count: int = 10  # Number of checkpoints to retain per workflow
     
     def __post_init__(self):
         """Post-initialization setup."""

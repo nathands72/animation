@@ -11,6 +11,7 @@ from graph.workflow import run_workflow_with_callbacks
 from graph.state import create_initial_state
 from utils.validators import validate_input
 from utils.helpers import setup_logging, get_output_path, estimate_cost, format_duration
+from utils.checkpoint_manager import CheckpointManager, load_checkpoint, list_checkpoints, get_latest_checkpoint
 from config import get_config
 from dotenv import load_dotenv
 
@@ -104,13 +105,161 @@ def main():
         help="Estimate cost before execution"
     )
     
+    # Checkpoint/Resume arguments
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from latest checkpoint for the specified workflow-id"
+    )
+    
+    parser.add_argument(
+        "--resume-from-step",
+        type=str,
+        choices=["context_analyzer", "web_researcher", "story_generator", 
+                 "script_segmenter", "character_designer", "video_assembler"],
+        help="Resume from a specific step (requires --workflow-id)"
+    )
+    
+    parser.add_argument(
+        "--checkpoint-path",
+        type=str,
+        help="Resume from a specific checkpoint file path"
+    )
+    
+    parser.add_argument(
+        "--list-checkpoints",
+        action="store_true",
+        help="List available checkpoints for the specified workflow-id"
+    )
+    
+    parser.add_argument(
+        "--no-checkpoint",
+        action="store_true",
+        help="Disable automatic checkpointing"
+    )
+    
     args = parser.parse_args()
     
     # Setup logging
     logger = setup_logging(log_level=args.log_level, log_file=args.log_file)
     
-    # Load input
-    if args.input:
+    # Get config
+    config = get_config()
+    
+    # Handle checkpoint listing
+    if args.list_checkpoints:
+        if not args.workflow_id:
+            logger.error("--workflow-id is required when using --list-checkpoints")
+            sys.exit(1)
+        
+        checkpoints = list_checkpoints(args.workflow_id, config.paths.checkpoint_dir)
+        
+        if not checkpoints:
+            print(f"\nNo checkpoints found for workflow '{args.workflow_id}'")
+        else:
+            print(f"\nAvailable checkpoints for workflow '{args.workflow_id}':")
+            print("=" * 60)
+            for i, cp in enumerate(checkpoints, 1):
+                timestamp = cp['timestamp'][:19].replace('T', ' ')  # Format timestamp
+                print(f"{i}. {cp['step_name']:20s} - {timestamp}")
+            print()
+        
+        sys.exit(0)
+    
+    # Handle resume mode
+    resume_state = None
+    resume_from_step = None
+    
+    if args.resume or args.resume_from_step or args.checkpoint_path:
+        # Validate resume arguments
+        if args.checkpoint_path:
+            # Resume from specific checkpoint file
+            checkpoint_path = Path(args.checkpoint_path)
+            if not checkpoint_path.exists():
+                logger.error(f"Checkpoint file not found: {checkpoint_path}")
+                sys.exit(1)
+            
+            logger.info(f"Resuming from checkpoint: {checkpoint_path}")
+            resume_state, last_step = load_checkpoint(checkpoint_path)
+            resume_from_step = last_step
+            
+        elif args.resume or args.resume_from_step:
+            # Resume from workflow ID
+            if not args.workflow_id:
+                logger.error("--workflow-id is required when using --resume or --resume-from-step")
+                sys.exit(1)
+            
+            if args.resume_from_step:
+                # Find checkpoint for specific step
+                # We need the checkpoint from the PREVIOUS step to resume FROM this step
+                step_order = ["context_analyzer", "web_researcher", "story_generator", 
+                             "script_segmenter", "character_designer", "video_assembler"]
+                
+                if args.resume_from_step not in step_order:
+                    logger.error(f"Invalid step name: {args.resume_from_step}")
+                    sys.exit(1)
+                
+                step_index = step_order.index(args.resume_from_step)
+                
+                if step_index == 0:
+                    # Starting from first step, no checkpoint needed
+                    logger.info(f"Starting from beginning (step: {args.resume_from_step})")
+                    resume_from_step = args.resume_from_step
+                else:
+                    # Load checkpoint from previous step
+                    prev_step = step_order[step_index - 1]
+                    manager = CheckpointManager(config.paths.checkpoint_dir)
+                    checkpoint_path = manager.get_checkpoint_for_step(args.workflow_id, prev_step)
+                    
+                    if not checkpoint_path:
+                        logger.error(f"No checkpoint found for step '{prev_step}' in workflow '{args.workflow_id}'")
+                        logger.info(f"Available checkpoints:")
+                        checkpoints = list_checkpoints(args.workflow_id, config.paths.checkpoint_dir)
+                        for cp in checkpoints:
+                            logger.info(f"  - {cp['step_name']}")
+                        sys.exit(1)
+                    
+                    logger.info(f"Resuming from step '{args.resume_from_step}' using checkpoint: {checkpoint_path}")
+                    resume_state, _ = load_checkpoint(checkpoint_path)
+                    resume_from_step = args.resume_from_step
+            else:
+                # Resume from latest checkpoint
+                checkpoint_path = get_latest_checkpoint(args.workflow_id, config.paths.checkpoint_dir)
+                
+                if not checkpoint_path:
+                    logger.error(f"No checkpoints found for workflow '{args.workflow_id}'")
+                    sys.exit(1)
+                
+                logger.info(f"Resuming from latest checkpoint: {checkpoint_path}")
+                resume_state, last_step = load_checkpoint(checkpoint_path)
+                
+                # Determine next step to resume from
+                step_order = ["context_analyzer", "web_researcher", "story_generator", 
+                             "script_segmenter", "character_designer", "video_assembler"]
+                
+                if last_step in step_order:
+                    step_index = step_order.index(last_step)
+                    if step_index < len(step_order) - 1:
+                        resume_from_step = step_order[step_index + 1]
+                        logger.info(f"Resuming from step: {resume_from_step}")
+                    else:
+                        logger.info("Workflow already completed")
+                        sys.exit(0)
+    
+    # Disable checkpointing if requested
+    if args.no_checkpoint:
+        config.enable_auto_checkpoint = False
+        logger.info("Automatic checkpointing disabled")
+    
+    # Load input (skip if resuming with state)
+    if resume_state:
+        # Use input from checkpoint
+        input_data = {
+            "context": resume_state.get("input_context", {}),
+            "preferences": resume_state.get("input_preferences", {})
+        }
+        logger.info("Using input context from checkpoint")
+    elif args.input:
         try:
             input_data = load_input_from_file(args.input)
         except Exception as e:
@@ -200,7 +349,9 @@ def main():
             input_context=input_context,
             input_preferences=input_preferences,
             progress_callback=progress_callback,
-            workflow_id=args.workflow_id
+            workflow_id=args.workflow_id,
+            resume_state=resume_state,
+            resume_from_step=resume_from_step
         )
         
         print("\n")  # New line after progress updates

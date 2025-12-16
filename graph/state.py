@@ -77,6 +77,10 @@ class MoralVideoState(TypedDict):
     # Optional human approval checkpoints
     requires_approval: Optional[bool]  # Whether workflow is waiting for approval
     approval_status: Optional[str]  # "pending", "approved", "rejected"
+    
+    # Checkpoint tracking
+    checkpoint_path: Optional[str]  # Path to last saved checkpoint
+    last_completed_step: Optional[str]  # Name of last successfully completed step
 
 
 def create_initial_state(
@@ -127,6 +131,8 @@ def create_initial_state(
         quality_checks={},
         requires_approval=False,
         approval_status=None,
+        checkpoint_path=None,
+        last_completed_step=None,
     )
 
 
@@ -186,4 +192,47 @@ def add_error(
         "errors": [error_info],
         "retry_counts": retry_counts,
     }
+
+
+def state_to_dict(state: MoralVideoState) -> Dict[str, Any]:
+    """
+    Convert state to JSON-serializable dictionary.
+    
+    Args:
+        state: Workflow state
+        
+    Returns:
+        JSON-serializable dictionary
+    """
+    from pathlib import Path
+    
+    result = {}
+    
+    for key, value in state.items():
+        # Handle Path objects
+        if isinstance(value, Path):
+            result[key] = str(value)
+        # Handle lists of Paths
+        elif isinstance(value, list) and value and isinstance(value[0], Path):
+            result[key] = [str(p) for p in value]
+        # Keep everything else as-is
+        else:
+            result[key] = value
+    
+    return result
+
+
+def state_from_dict(state_dict: Dict[str, Any]) -> MoralVideoState:
+    """
+    Reconstruct state from dictionary.
+    
+    Args:
+        state_dict: State dictionary from checkpoint
+        
+    Returns:
+        MoralVideoState instance
+    """
+    # TypedDict doesn't need special reconstruction
+    # Just return the dict as-is, it will be treated as MoralVideoState
+    return state_dict  # type: ignore
 

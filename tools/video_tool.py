@@ -1,6 +1,7 @@
 """Video processing tool with MoviePy integration."""
 
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import tempfile
@@ -9,6 +10,35 @@ from config import get_config
 from utils.helpers import get_temp_path, get_output_path
 
 logger = logging.getLogger(__name__)
+
+# Configure ImageMagick path for MoviePy TextClip
+# This is required for text overlays and end cards
+try:
+    from moviepy.config import change_settings
+    
+    # Try to find ImageMagick binary
+    imagemagick_binary = os.getenv("IMAGEMAGICK_BINARY")
+    
+    if not imagemagick_binary:
+        # Common ImageMagick installation paths on Windows
+        possible_paths = [
+            r"C:\Program Files\ImageMagick-7.1.1-Q16\magick.exe",
+            r"C:\Program Files\ImageMagick-7.1.0-Q16\magick.exe",
+            r"C:\Program Files\ImageMagick-7.0.0-Q16\magick.exe",
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                imagemagick_binary = path
+                break
+    
+    if imagemagick_binary and os.path.exists(imagemagick_binary):
+        change_settings({"IMAGEMAGICK_BINARY": imagemagick_binary})
+        logger.info(f"ImageMagick configured: {imagemagick_binary}")
+    else:
+        logger.warning("ImageMagick not found. Text overlays will not work. Install from: https://imagemagick.org")
+except Exception as e:
+    logger.warning(f"Could not configure ImageMagick: {e}")
 
 
 class VideoProcessingTool:
@@ -19,7 +49,8 @@ class VideoProcessingTool:
         self.config = get_config()
         try:
             from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, TextClip
-            from moviepy.video.fx import fadein, fadeout
+            from moviepy.video.fx.fadein import fadein
+            from moviepy.video.fx.fadeout import fadeout
             self.moviepy = True
             self.VideoFileClip = VideoFileClip
             self.ImageClip = ImageClip
@@ -364,26 +395,31 @@ class VideoProcessingTool:
             
             # Add end card with moral message if provided
             if moral_message:
-                logger.info("Adding end card with moral message")
-                
-                # Create end card (3 seconds)
-                end_card_duration = 3.0
-                end_card = self.TextClip(
-                    moral_message,
-                    fontsize=50,
-                    color='white',
-                    font='Arial-Bold',
-                    stroke_color='black',
-                    stroke_width=3,
-                    size=(video.w, video.h),
-                    method='caption'
-                ).set_duration(end_card_duration).set_position('center')
-                
-                # Add fade in/out to end card
-                end_card = end_card.fx(self.fadein, 0.5).fx(self.fadeout, 0.5)
-                
-                # Concatenate video and end card
-                video = self.concatenate_videoclips([video, end_card], method="compose")
+                try:
+                    logger.info("Adding end card with moral message")
+                    
+                    # Create end card (3 seconds)
+                    end_card_duration = 3.0
+                    end_card = self.TextClip(
+                        moral_message,
+                        fontsize=50,
+                        color='white',
+                        font='Arial-Bold',
+                        stroke_color='black',
+                        stroke_width=3,
+                        size=(video.w, video.h),
+                        method='caption'
+                    ).set_duration(end_card_duration).set_position('center')
+                    
+                    # Add fade in/out to end card
+                    end_card = end_card.fx(self.fadein, 0.5).fx(self.fadeout, 0.5)
+                    
+                    # Concatenate video and end card
+                    video = self.concatenate_videoclips([video, end_card], method="compose")
+                    logger.info("End card added successfully")
+                except Exception as e:
+                    logger.warning(f"Could not add end card (ImageMagick may not be installed): {e}")
+                    logger.warning("Continuing without end card. To add end cards, install ImageMagick from: https://imagemagick.org")
             
             # Determine output path
             if output_path is None:

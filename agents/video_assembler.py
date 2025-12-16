@@ -102,14 +102,33 @@ class VideoAssemblyAgent:
         try:
             from gtts import gTTS
             
+            logger.info("Generating narration with gTTS...")
             tts = gTTS(text=story, lang=self.config.tts.language, slow=False)
             tts.save(str(output_path))
             
-            logger.info(f"Narration generated: {output_path}")
-            return output_path
+            # Verify the file was created and has content
+            if output_path.exists() and output_path.stat().st_size > 0:
+                logger.info(f"Narration generated successfully: {output_path}")
+                return output_path
+            else:
+                logger.error("gTTS created an empty file")
+                return None
             
         except Exception as e:
-            logger.error(f"Error generating gTTS narration: {e}")
+            error_msg = str(e)
+            logger.error(f"Error generating gTTS narration: {error_msg}")
+            
+            # Provide helpful context for common errors
+            if "200" in error_msg or "OK" in error_msg:
+                logger.error("gTTS received HTTP 200 but failed to process audio. This may be due to:")
+                logger.error("  1. Network/firewall blocking Google TTS service")
+                logger.error("  2. Rate limiting from Google")
+                logger.error("  3. Corrupted gTTS installation")
+                logger.error("Solutions:")
+                logger.error("  - Try: pip install --upgrade gtts")
+                logger.error("  - Use ElevenLabs instead (set ELEVENLABS_API_KEY in .env)")
+                logger.error("  - Disable narration temporarily in preferences")
+            
             return None
     
     def get_background_music(
