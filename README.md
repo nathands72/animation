@@ -27,46 +27,152 @@ The system consists of six specialized agents:
 
 ### Prerequisites
 
-- Python 3.10 or higher
-- FFmpeg (for video processing)
-- API keys for:
-  - OpenAI (for GPT-4 and DALL-E 3)
-  - Tavily (for web search, optional)
-  - ElevenLabs (for TTS, optional)
+#### System Requirements
+
+- **Python**: 3.10 or higher
+- **Operating System**: Windows, macOS, or Linux
+- **Disk Space**: At least 2GB free for temporary files and outputs
+- **RAM**: Minimum 4GB (8GB recommended for smooth operation)
+
+#### Required Software
+
+1. **FFmpeg** (for video processing)
+   - Required for video encoding and audio processing
+   - Installation instructions below
+
+2. **ImageMagick** (for text overlays and end cards)
+   - **CRITICAL**: Required for creating moral message end cards
+   - Without this, videos will be created without end cards
+   - Installation instructions below
+
+#### API Keys
+
+**Required:**
+- **OpenAI API Key**: For GPT-4 (story generation) and DALL-E 3 (image generation)
+  - Get from: https://platform.openai.com/api-keys
+
+**Optional:**
+- **Tavily API Key**: For web search (graceful degradation if not provided)
+  - Get from: https://tavily.com/
+- **ElevenLabs API Key**: For high-quality TTS (falls back to gTTS if not provided)
+  - Get from: https://elevenlabs.io/
 
 ### Setup
 
-1. Clone the repository:
+#### 1. Clone the Repository
+
 ```bash
 git clone <repository-url>
 cd animation
 ```
 
-2. Install dependencies:
+#### 2. Create Virtual Environment (Recommended)
+
+```bash
+# Windows
+python -m venv animi-venv
+animi-venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv animi-venv
+source animi-venv/bin/activate
+```
+
+#### 3. Install Python Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Install FFmpeg:
-   - **Windows**: Download from [FFmpeg website](https://ffmpeg.org/download.html)
-   - **macOS**: `brew install ffmpeg`
-   - **Linux**: `sudo apt-get install ffmpeg`
+#### 4. Install FFmpeg
 
-4. Set up environment variables:
+**Windows:**
+1. Download from [FFmpeg website](https://ffmpeg.org/download.html)
+2. Extract to `C:\ffmpeg`
+3. Add `C:\ffmpeg\bin` to your system PATH
+4. Verify: `ffmpeg -version`
+
+**macOS:**
+```bash
+brew install ffmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install ffmpeg
+```
+
+#### 5. Install ImageMagick (CRITICAL)
+
+**Windows:**
+1. Download from: https://imagemagick.org/script/download.php
+   - Choose `ImageMagick-7.x.x-x-Q16-x64-dll.exe`
+2. During installation, **check these options**:
+   - ✅ **Install legacy utilities (e.g., convert)**
+   - ✅ **Add application directory to your system path**
+3. Restart your terminal/PowerShell
+4. Verify: `magick -version`
+
+**macOS:**
+```bash
+brew install imagemagick
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install imagemagick
+```
+
+> **Note:** If ImageMagick is not installed, videos will be created without moral message end cards. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for details.
+
+#### 6. Set Up Environment Variables
+
+Create a `.env` file in the project root:
+
 ```bash
 # Required
-export OPENAI_API_KEY="your-openai-api-key"
+OPENAI_API_KEY=your-openai-api-key
 
 # Optional
+TAVILY_API_KEY=your-tavily-api-key
+ELEVENLABS_API_KEY=your-elevenlabs-api-key
+
+# Optional: Specify ImageMagick path if not in system PATH
+# IMAGEMAGICK_BINARY=C:\Program Files\ImageMagick-7.1.1-Q16\magick.exe
+```
+
+Or set environment variables directly:
+
+**Windows (PowerShell):**
+```powershell
+$env:OPENAI_API_KEY="your-openai-api-key"
+$env:TAVILY_API_KEY="your-tavily-api-key"
+$env:ELEVENLABS_API_KEY="your-elevenlabs-api-key"
+```
+
+**macOS/Linux:**
+```bash
+export OPENAI_API_KEY="your-openai-api-key"
 export TAVILY_API_KEY="your-tavily-api-key"
 export ELEVENLABS_API_KEY="your-elevenlabs-api-key"
 ```
 
-Or create a `.env` file:
-```
-OPENAI_API_KEY=your-openai-api-key
-TAVILY_API_KEY=your-tavily-api-key
-ELEVENLABS_API_KEY=your-elevenlabs-api-key
+#### 7. Verify Installation
+
+Run these commands to verify your setup:
+
+```bash
+# Check Python packages
+pip list | grep -E "moviepy|gtts|langchain|openai"
+
+# Check system binaries
+ffmpeg -version
+magick -version
+
+# Test the workflow (uses example input)
+python main.py --estimate-cost
 ```
 
 ## Usage
@@ -309,51 +415,168 @@ Typical costs per video:
 
 ## Troubleshooting
 
+> **📖 For detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+
 ### Common Issues
 
-1. **FFmpeg not found**
-   - Ensure FFmpeg is installed and in PATH
-   - Test with: `ffmpeg -version`
+#### 1. ImageMagick Not Found (CRITICAL)
 
-2. **OpenAI API errors**
-   - Check API key is set correctly
-   - Verify API key has sufficient credits
-   - Check rate limits
+**Error:**
+```
+MoviePy Error: creation of None failed because of the following error:
+[WinError 2] The system cannot find the file specified.
+This error can be due to the fact that ImageMagick is not installed...
+```
 
-3. **Image generation fails**
-   - Verify DALL-E 3 API access
-   - Check image generation rate limits
-   - Ensure sufficient API credits
+**Solution:**
+1. Install ImageMagick from: https://imagemagick.org/script/download.php
+2. During installation, check:
+   - ✅ Install legacy utilities (e.g., convert)
+   - ✅ Add application directory to your system path
+3. Restart your terminal and verify: `magick -version`
+4. If still not working, set `IMAGEMAGICK_BINARY` in your `.env` file
 
-4. **Video assembly fails**
-   - Check FFmpeg installation
-   - Verify image files exist
-   - Check disk space
+**Workaround:** Videos will be created without end cards if ImageMagick is unavailable.
 
-5. **Memory issues**
-   - Reduce number of scenes
-   - Lower image resolution
-   - Process in smaller batches
+#### 2. gTTS Narration Errors
 
-6. **Workflow interrupted**
-   - Use `--resume` to continue from last checkpoint
-   - Check `temp/checkpoints/{workflow_id}/` for saved progress
-   - Use `--list-checkpoints` to see available checkpoints
+**Error:**
+```
+Error generating gTTS narration: 200 (OK) from TTS API. Probable cause: Unknown
+```
+
+**Solutions:**
+- **Option A:** Reinstall gTTS: `pip install --upgrade gtts`
+- **Option B:** Use ElevenLabs instead (add `ELEVENLABS_API_KEY` to `.env`)
+- **Option C:** Disable narration: Set `"narration": false` in preferences
+
+**Causes:**
+- Network/firewall blocking Google TTS service
+- Rate limiting from Google
+- Corrupted gTTS installation
+
+#### 3. FFmpeg Not Found
+
+**Error:**
+```
+ffmpeg: command not found
+```
+
+**Solution:**
+- Ensure FFmpeg is installed and in PATH
+- Test with: `ffmpeg -version`
+- Windows: Add FFmpeg bin directory to system PATH
+- Restart your terminal after installation
+
+#### 4. OpenAI API Errors
+
+**Common errors:**
+- `Invalid API key`: Check your `.env` file
+- `Insufficient quota`: Add credits to your OpenAI account
+- `Rate limit exceeded`: Wait a few minutes and retry
+
+**Solution:**
+```bash
+# Verify API key is set
+echo $OPENAI_API_KEY  # macOS/Linux
+echo $env:OPENAI_API_KEY  # Windows PowerShell
+```
+
+#### 5. Image Generation Fails
+
+**Solutions:**
+- Verify DALL-E 3 API access in your OpenAI account
+- Check image generation rate limits (5 images/minute for free tier)
+- Ensure sufficient API credits
+- Use `--estimate-cost` to check costs before running
+
+#### 6. Video Assembly Fails
+
+**Checklist:**
+- ✅ FFmpeg installed and in PATH
+- ✅ ImageMagick installed (for end cards)
+- ✅ Image files exist in `temp/images/`
+- ✅ Sufficient disk space (at least 500MB free)
+- ✅ No file permission issues
+
+#### 7. Memory Issues
+
+**Solutions:**
+- Reduce number of scenes (shorter duration)
+- Lower image resolution in `config.py`
+- Close other applications
+- Use a machine with more RAM (8GB+ recommended)
+
+#### 8. Workflow Interrupted
+
+**Recovery:**
+```bash
+# Resume from latest checkpoint
+python main.py --workflow-id my-video-001 --resume
+
+# List available checkpoints
+python main.py --workflow-id my-video-001 --list-checkpoints
+
+# Resume from specific step
+python main.py --workflow-id my-video-001 --resume-from-step video_assembler
+```
+
+### Quick Diagnostics
+
+Run these commands to check your setup:
+
+```bash
+# Check Python packages
+pip list | grep -E "moviepy|gtts|langchain|openai"
+
+# Check system binaries
+ffmpeg -version
+magick -version
+
+# Check environment variables
+echo $OPENAI_API_KEY  # Should not be empty
+```
+
+**Windows PowerShell:**
+```powershell
+pip list | Select-String "moviepy|gtts|langchain|openai"
+ffmpeg -version
+magick -version
+Get-ChildItem Env: | Select-String "OPENAI|IMAGEMAGICK"
+```
 
 ### Debug Mode
 
-Run with debug logging:
+Run with debug logging for detailed error information:
+
 ```bash
 python main.py -i story.json --log-level DEBUG --log-file debug.log
 ```
 
-### Error Handling
+Check the log file for detailed error traces and API responses.
+
+### Error Handling Features
 
 The system includes comprehensive error handling:
-- Automatic retries with exponential backoff
-- Graceful degradation (e.g., skip web search if API fails)
-- Clear error messages in logs
-- State persistence for recovery
+- ✅ Automatic retries with exponential backoff
+- ✅ Graceful degradation (e.g., skip web search if API fails)
+- ✅ Clear error messages with actionable solutions
+- ✅ State persistence for recovery via checkpoints
+- ✅ Automatic ImageMagick path detection
+- ✅ Fallback to gTTS if ElevenLabs fails
+
+### Getting Help
+
+If you're still experiencing issues:
+
+1. Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions
+2. Review logs in `debug.log` or console output
+3. Verify all prerequisites are installed correctly
+4. Try running with `--estimate-cost` first to validate setup
+5. Open an issue on GitHub with:
+   - Error message and full stack trace
+   - Output of diagnostic commands above
+   - Your OS and Python version
 
 ## Development
 
