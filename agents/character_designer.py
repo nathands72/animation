@@ -60,6 +60,12 @@ Context:
 Art Style: {art_style}
 Age Group: {age_group}
 
+For each character, provide a detailed visual design description suitable for image generation.
+Focus on physical appearance, clothing, colors, and distinctive features that match their personality traits.
+
+Format your response as follows for each character:
+**[Character Name]**: [Detailed visual description including character type, physical features, clothing, colors, and personality-reflecting visual elements]
+
 Create detailed character design descriptions and prompts for image generation.
 Focus on consistency and child-friendly aesthetics."""
 
@@ -87,16 +93,58 @@ Focus on consistency and child-friendly aesthetics."""
             characters = context.get("characters", [])
             age_group = context.get("age_group", "6-8")
             
-            # Generate character design descriptions using LLM
+            # Use LLM to generate enhanced character design descriptions
             character_descriptions = {}
             
+            if characters:
+                try:
+                    # Create prompt using the defined system and human prompts
+                    prompt = ChatPromptTemplate.from_messages([
+                        SystemMessagePromptTemplate.from_template(self.system_prompt),
+                        HumanMessagePromptTemplate.from_template(self.human_prompt)
+                    ])
+                    
+                    # Format characters for LLM input
+                    characters_str = "\n".join([
+                        f"- {char.get('name', 'Unknown')}: {char.get('type', 'character')} with traits: {', '.join(char.get('traits', []))}"
+                        for char in characters
+                    ])
+                    
+                    # Format context for LLM
+                    context_str = f"Theme: {context.get('theme', 'N/A')}\nSetting: {context.get('setting', 'N/A')}\nMoral Lesson: {context.get('moral_lesson', 'N/A')}"
+                    
+                    # Format prompt with input
+                    formatted_prompt = prompt.format_messages(
+                        characters=characters_str,
+                        context=context_str,
+                        art_style=art_style,
+                        age_group=age_group
+                    )
+                    
+                    # Call LLM
+                    logger.info("Generating character designs with LLM")
+                    response = self.llm.invoke(formatted_prompt)
+                    
+                    # Parse LLM response to extract character descriptions
+                    llm_descriptions = self._parse_llm_character_response(response.content, characters)
+                    
+                except Exception as e:
+                    logger.warning(f"LLM character design generation failed: {e}. Using fallback method.")
+                    llm_descriptions = {}
+            else:
+                llm_descriptions = {}
+            
+            # Generate character descriptions and reference images
             for char in characters:
                 char_name = char.get("name", "Unknown")
                 char_type = char.get("type", "unknown")
                 traits = char.get("traits", [])
                 
-                # Create design prompt for this character
-                design_prompt = self._create_design_prompt(char, art_style, age_group)
+                # Use LLM-generated description if available, otherwise create basic prompt
+                if char_name in llm_descriptions:
+                    design_prompt = llm_descriptions[char_name]
+                else:
+                    design_prompt = self._create_design_prompt(char, art_style, age_group)
                 
                 # Generate character reference image
                 logger.info(f"Generating reference image for {char_name}")
@@ -107,12 +155,22 @@ Focus on consistency and child-friendly aesthetics."""
                     style=art_style
                 )
                 
+                # Analyze reference image with GPT-4 Vision to get detailed visual description
+                visual_analysis = None
+                if reference_image_path:
+                    visual_analysis = self.image_tool.analyze_character_image(
+                        image_path=reference_image_path,
+                        character_name=char_name,
+                        character_type=char_type
+                    )
+                
                 character_descriptions[char_name] = {
                     "name": char_name,
                     "type": char_type,
                     "traits": traits,
                     "description": design_prompt,
                     "design_prompt": design_prompt,
+                    "visual_analysis": visual_analysis,  # Detailed description from GPT-4 Vision
                     "reference_image_path": str(reference_image_path) if reference_image_path else None,
                 }
             
@@ -160,12 +218,21 @@ Focus on consistency and child-friendly aesthetics."""
                 setting = segment.get("setting", context.get("setting", ""))
                 emotions = segment.get("emotions", [])
                 
-                # Get character reference descriptions
+                # Get character reference descriptions with explicit type information
                 character_references = {}
                 for char_name in characters:
                     if char_name in character_descriptions:
                         char_desc = character_descriptions[char_name]
-                        character_references[char_name] = char_desc.get("design_prompt", "")
+                        
+                        # Prioritize visual analysis from reference image if available
+                        if char_desc.get("visual_analysis"):
+                            character_references[char_name] = char_desc["visual_analysis"]
+                        else:
+                            # Fallback to type and traits
+                            char_type = char_desc.get("type", "character")
+                            traits = char_desc.get("traits", [])
+                            traits_str = ", ".join(traits[:3]) if traits else "friendly"
+                            character_references[char_name] = f"a {char_type} character with {traits_str}"
                 
                 logger.info(f"Generating image for scene {scene_number}")
                 
@@ -257,3 +324,54 @@ Focus on consistency and child-friendly aesthetics."""
         
         return character_descriptions
 
+    def _parse_llm_character_response(
+        self,
+        llm_response: str,
+        characters: List[Dict[str, Any]]
+    ) -> Dict[str, str]:
+        """
+        Parse LLM response to extract character design descriptions.
+        
+        Args:
+            llm_response: Raw LLM response text
+            characters: List of character dictionaries
+            
+        Returns:
+            Dictionary mapping character names to design descriptions
+        """
+        import re
+        
+        character_designs = {}
+        
+        try:
+            # Try to parse structured response
+            # Expected format: Character name followed by description
+            for char in characters:
+                char_name = char.get("name", "Unknown")
+                
+                # Look for patterns like "CharacterName:" or "- CharacterName:" followed by description
+                patterns = [
+                    rf"{char_name}[:\-]\s*(.+?)(?=\n\n|\n[A-Z]|$)",  # Name: description
+                    rf"\*\*{char_name}\*\*[:\-]?\s*(.+?)(?=\n\n|\n\*\*|$)",  # **Name**: description
+                    rf"#{1,3}\s*{char_name}[:\-]?\s*(.+?)(?=\n#|\n\n|$)",  # # Name: description
+                ]
+                
+                for pattern in patterns:
+                    match = re.search(pattern, llm_response, re.DOTALL | re.IGNORECASE)
+                    if match:
+                        description = match.group(1).strip()
+                        # Clean up the description
+                        description = re.sub(r'\n+', ' ', description)  # Replace newlines with spaces
+                        description = re.sub(r'\s+', ' ', description)  # Normalize whitespace
+                        character_designs[char_name] = description
+                        break
+            
+            # If we didn't find structured descriptions, try to extract from general text
+            if not character_designs:
+                logger.warning("Could not parse structured character descriptions from LLM response")
+                # Return empty dict to fall back to basic prompt generation
+                
+        except Exception as e:
+            logger.warning(f"Error parsing LLM character response: {e}")
+        
+        return character_designs

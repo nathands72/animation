@@ -105,6 +105,85 @@ class ImageGenerationTool:
             logger.error(f"Error generating image: {e}")
             return None
     
+    def analyze_character_image(
+        self,
+        image_path: Path,
+        character_name: str,
+        character_type: str
+    ) -> Optional[str]:
+        """
+        Analyze a character reference image using GPT-4 Vision to extract detailed visual description.
+        
+        Args:
+            image_path: Path to character reference image
+            character_name: Name of the character
+            character_type: Type of character (e.g., rabbit, fox)
+            
+        Returns:
+            Detailed visual description string, or None if analysis failed
+        """
+        if not self.openai_client:
+            logger.error("OpenAI client not available")
+            return None
+        
+        if not image_path or not image_path.exists():
+            logger.warning(f"Character reference image not found: {image_path}")
+            return None
+        
+        try:
+            import base64
+            
+            logger.info(f"Analyzing character reference image for {character_name}")
+            
+            # Read and encode image
+            with open(image_path, "rb") as image_file:
+                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            
+            # Create vision prompt
+            vision_prompt = f"""Analyze this character reference image for {character_name}, a {character_type} character.
+
+Provide a detailed visual description that includes:
+1. Physical appearance (body shape, size, proportions)
+2. Colors (fur/skin color, eye color, etc.)
+3. Distinctive features (ears, tail, facial features, etc.)
+4. Clothing and accessories (if any)
+5. Art style and visual characteristics
+6. Overall impression and personality conveyed through appearance
+
+Format the description as a single paragraph suitable for image generation prompts.
+Focus on concrete visual details that will ensure consistency across multiple scenes."""
+
+            # Call GPT-4 Vision
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o",  # GPT-4 Vision model
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": vision_prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{image_data}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=500
+            )
+            
+            visual_description = response.choices[0].message.content.strip()
+            
+            logger.info(f"Character visual analysis complete for {character_name}")
+            logger.debug(f"Visual description: {visual_description[:100]}...")
+            
+            return visual_description
+            
+        except Exception as e:
+            logger.error(f"Error analyzing character image: {e}")
+            return None
+    
     def _enhance_prompt(self, prompt: str, style: Optional[str] = None) -> str:
         """
         Enhance prompt for child-friendly, consistent image generation.
@@ -231,25 +310,39 @@ class ImageGenerationTool:
         Returns:
             Path to generated scene image, or None if generation failed
         """
-        # Build comprehensive scene prompt
-        characters_str = ", ".join(characters)
-        emotions_str = ", ".join(emotions)
+        # Build comprehensive scene prompt with character details FIRST for consistency
+        emotions_str = ", ".join(emotions) if emotions else "neutral"
         
-        prompt = (
-            f"Scene: {scene_description}, "
-            f"Characters: {characters_str}, "
-            f"Setting: {setting}, "
-            f"Emotions: {emotions_str}, "
-            f"animated scene, clear composition, "
-            f"characters visible and expressive"
-        )
-        
-        # Add character reference details if available
-        if character_references:
-            ref_details = ", ".join([
-                f"{name}: {desc}" for name, desc in character_references.items()
-            ])
-            prompt += f", Character details: {ref_details}"
+        # Start with character details to ensure DALL-E prioritizes them
+        if character_references and characters:
+            # Build detailed character descriptions at the start
+            char_details = []
+            for char_name in characters:
+                if char_name in character_references:
+                    char_details.append(f"{char_name} ({character_references[char_name]})")
+                else:
+                    char_details.append(char_name)
+            characters_str = ", ".join(char_details)
+            
+            prompt = (
+                f"Characters: {characters_str}. "
+                f"Scene: {scene_description}. "
+                f"Setting: {setting}. "
+                f"Emotions: {emotions_str}. "
+                f"Animated scene, clear composition, "
+                f"characters visible and expressive"
+            )
+        else:
+            # Fallback if no character references available
+            characters_str = ", ".join(characters) if characters else "no characters"
+            prompt = (
+                f"Scene: {scene_description}, "
+                f"Characters: {characters_str}, "
+                f"Setting: {setting}, "
+                f"Emotions: {emotions_str}, "
+                f"animated scene, clear composition, "
+                f"characters visible and expressive"
+            )
         
         output_path = get_temp_path(f"scene_{scene_number:03d}.png", "images")
         
