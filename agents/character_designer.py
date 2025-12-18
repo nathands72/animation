@@ -63,6 +63,9 @@ Age Group: {age_group}
 For each character, provide a detailed visual design description suitable for image generation.
 Focus on physical appearance, clothing, colors, and distinctive features that match their personality traits.
 
+**IMPORTANT**: Some characters may not have predefined traits. For these characters, infer appropriate 
+personality traits and visual characteristics based on their type and role in the story context.
+
 Format your response as follows for each character:
 **[Character Name]**: [Detailed visual description including character type, physical features, clothing, colors, and personality-reflecting visual elements]
 

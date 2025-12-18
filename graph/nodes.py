@@ -408,6 +408,73 @@ def character_designer_node(state: MoralVideoState) -> Dict[str, Any]:
         input_preferences = state.get("input_preferences", {})
         art_style = input_preferences.get("art_style", "cartoon")
         
+        # Get script segments to extract all characters
+        script_segments = state.get("script_segments", [])
+        
+        # Extract all unique character names from script segments
+        all_character_names = set()
+        for segment in script_segments:
+            characters_in_scene = segment.get("characters", [])
+            all_character_names.update(characters_in_scene)
+        
+        # Get existing characters from validated context
+        existing_characters = validated_context.get("characters", [])
+        existing_character_names = {char.get("name") for char in existing_characters}
+        
+        # Find new characters that need to be added
+        new_character_names = all_character_names - existing_character_names
+        
+        # Create character entries for new characters
+        if new_character_names:
+            logger.info(f"Found {len(new_character_names)} new characters in story segments: {new_character_names}")
+            
+            # Use CharacterInferenceTool to infer character details from script segments
+            updated_characters = list(existing_characters)
+            
+            try:
+                from tools.character_inference_tool import CharacterInferenceTool
+                
+                # Initialize character inference tool
+                inference_tool = CharacterInferenceTool()
+                
+                # Infer character details from story segments
+                inferred_characters = inference_tool.infer_characters_from_segments(
+                    character_names=list(new_character_names),
+                    script_segments=script_segments,
+                    story_context=validated_context
+                )
+                
+                # Add inferred characters to updated_characters
+                for char_name in new_character_names:
+                    if char_name in inferred_characters:
+                        char_info = inferred_characters[char_name]
+                        updated_characters.append({
+                            "name": char_name,
+                            "type": char_info.get("type", "character"),
+                            "traits": char_info.get("traits", [])
+                        })
+                    else:
+                        # Fallback if inference didn't provide info for this character
+                        updated_characters.append({
+                            "name": char_name,
+                            "type": "character",
+                            "traits": []
+                        })
+                        
+            except Exception as e:
+                logger.warning(f"Character inference failed: {e}. Using fallback.")
+                # Fallback: add characters with minimal info
+                for char_name in new_character_names:
+                    updated_characters.append({
+                        "name": char_name,
+                        "type": "character",
+                        "traits": []
+                    })
+            
+            # Update validated context with all characters
+            validated_context = {**validated_context, "characters": updated_characters}
+            logger.info(f"Updated context with {len(updated_characters)} total characters")
+        
         # Design characters
         character_descriptions = agent.design_characters(
             context=validated_context,
