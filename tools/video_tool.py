@@ -73,6 +73,7 @@ class VideoProcessingTool:
         self,
         image_paths: List[Path],
         durations: Optional[List[float]] = None,
+        segment_audio_paths: Optional[List[Optional[Path]]] = None,
         output_path: Optional[Path] = None,
         fps: Optional[int] = None,
         transition_duration: Optional[float] = None
@@ -83,6 +84,7 @@ class VideoProcessingTool:
         Args:
             image_paths: List of paths to image files
             durations: Optional list of durations for each image (default: 5 seconds)
+            segment_audio_paths: Optional list of audio paths for each segment
             output_path: Optional output path (auto-generated if not provided)
             fps: Optional FPS (default from config)
             transition_duration: Optional transition duration (default from config)
@@ -115,6 +117,13 @@ class VideoProcessingTool:
         try:
             logger.info(f"Creating video from {len(image_paths)} images")
             
+            # Ensure segment_audio_paths matches image_paths length
+            if segment_audio_paths is None:
+                segment_audio_paths = [None] * len(image_paths)
+            elif len(segment_audio_paths) < len(image_paths):
+                # Pad with None if needed
+                segment_audio_paths = segment_audio_paths + [None] * (len(image_paths) - len(segment_audio_paths))
+            
             # Create clips from images
             clips = []
             for i, (image_path, duration) in enumerate(zip(image_paths, durations)):
@@ -123,6 +132,17 @@ class VideoProcessingTool:
                     continue
                 
                 clip = self.ImageClip(str(image_path), duration=duration)
+                
+                # Add per-segment audio if provided
+                if i < len(segment_audio_paths) and segment_audio_paths[i]:
+                    audio_path = segment_audio_paths[i]
+                    if audio_path.exists():
+                        try:
+                            audio_clip = self.AudioFileClip(str(audio_path))
+                            clip = clip.set_audio(audio_clip)
+                            logger.info(f"Attached audio to segment {i + 1}: {audio_path.name}")
+                        except Exception as e:
+                            logger.warning(f"Failed to attach audio to segment {i + 1}: {e}")
                 
                 # Add fade transitions
                 if i > 0:  # Fade in (except first clip)

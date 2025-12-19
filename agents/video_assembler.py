@@ -131,6 +131,88 @@ class VideoAssemblyAgent:
             
             return None
     
+    def _get_audio_duration(self, audio_path: Path) -> float:
+        """
+        Get duration of audio file in seconds.
+        
+        Args:
+            audio_path: Path to audio file
+            
+        Returns:
+            Duration in seconds, or 0.0 if failed
+        """
+        try:
+            from moviepy.editor import AudioFileClip
+            
+            audio_clip = AudioFileClip(str(audio_path))
+            duration = audio_clip.duration
+            audio_clip.close()
+            
+            return duration
+        except Exception as e:
+            logger.error(f"Error getting audio duration: {e}")
+            return 0.0
+    
+    def generate_segment_narration(
+        self,
+        segment: Dict[str, Any],
+        segment_index: int,
+        output_dir: Path
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Generate narration for a single segment.
+        
+        Args:
+            segment: Scene segment dictionary
+            segment_index: Index of the segment (0-based)
+            output_dir: Directory to save audio file
+            
+        Returns:
+            Dict with 'audio_path' and 'duration', or None if no narration
+        """
+        try:
+            # Get narration text from segment
+            narration_text = segment.get("narration") or segment.get("dialogue") or ""
+            
+            # Skip if no narration text
+            if not narration_text or not narration_text.strip():
+                logger.info(f"Segment {segment_index + 1} has no narration, skipping")
+                return None
+            
+            # Create output path
+            scene_number = segment.get("scene_number", segment_index + 1)
+            output_path = output_dir / f"segment_{scene_number}_narration.mp3"
+            
+            logger.info(f"Generating narration for segment {scene_number}: {narration_text[:50]}...")
+            
+            # Generate narration using appropriate TTS
+            if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
+                audio_path = self._generate_elevenlabs_narration(narration_text, output_path)
+            else:
+                audio_path = self._generate_gtts_narration(narration_text, output_path)
+            
+            if not audio_path:
+                logger.warning(f"Failed to generate narration for segment {scene_number}")
+                return None
+            
+            # Get actual audio duration
+            duration = self._get_audio_duration(audio_path)
+            
+            if duration <= 0:
+                logger.warning(f"Invalid audio duration for segment {scene_number}")
+                return None
+            
+            logger.info(f"Segment {scene_number} narration generated: {duration:.2f}s")
+            
+            return {
+                "audio_path": audio_path,
+                "duration": duration
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating segment narration: {e}")
+            return None
+    
     def get_background_music(
         self,
         duration_seconds: float
@@ -179,7 +261,7 @@ class VideoAssemblyAgent:
             Path to final video file, or None if assembly failed
         """
         try:
-            logger.info("Assembling final video")
+            logger.info("Assembling final video with per-segment narration")
             
             # Filter out None images
             valid_images = [img for img in scene_images if img and Path(img).exists()]
@@ -188,22 +270,59 @@ class VideoAssemblyAgent:
                 logger.error("No valid scene images provided")
                 return None
             
-            # Get durations from script segments
+            # Ensure script_segments match valid_images count
+            if len(script_segments) != len(valid_images):
+                logger.warning(f"Segment count mismatch: {len(script_segments)} segments vs {len(valid_images)} images")
+                # Adjust to minimum length
+                min_length = min(len(script_segments), len(valid_images))
+                script_segments = script_segments[:min_length]
+                valid_images = valid_images[:min_length]
+            
+            # Generate per-segment narration if enabled
+            preferences = context.get("preferences", {})
+            segment_audio_paths = []
             durations = []
-            for segment in script_segments:
-                durations.append(segment.get("duration_seconds", 5.0))
             
-            # Ensure durations match images
-            while len(durations) < len(valid_images):
-                durations.append(5.0)  # Default duration
+            if preferences.get("narration", True):
+                logger.info("Generating per-segment narration")
+                audio_output_dir = get_temp_path("", "audio")
+                
+                for i, segment in enumerate(script_segments):
+                    # Generate narration for this segment
+                    narration_info = self.generate_segment_narration(
+                        segment=segment,
+                        segment_index=i,
+                        output_dir=audio_output_dir
+                    )
+                    
+                    if narration_info:
+                        # Use actual audio duration
+                        segment_audio_paths.append(narration_info["audio_path"])
+                        durations.append(narration_info["duration"])
+                        logger.info(f"Segment {i + 1}: {narration_info['duration']:.2f}s (from audio)")
+                    else:
+                        # No narration for this segment, use default duration
+                        segment_audio_paths.append(None)
+                        default_duration = segment.get("duration_seconds", 5.0)
+                        durations.append(default_duration)
+                        logger.info(f"Segment {i + 1}: {default_duration:.2f}s (default, no narration)")
+            else:
+                # No narration, use segment durations from script
+                logger.info("Narration disabled, using script segment durations")
+                for segment in script_segments:
+                    segment_audio_paths.append(None)
+                    durations.append(segment.get("duration_seconds", 5.0))
             
-            durations = durations[:len(valid_images)]
+            # Log total duration
+            total_duration = sum(durations)
+            logger.info(f"Total video duration: {total_duration:.2f}s ({len(durations)} segments)")
             
-            # Create video from images
-            logger.info("Creating video from scene images")
+            # Create video from images with per-segment audio
+            logger.info("Creating video from scene images with per-segment audio")
             video_path = self.video_tool.create_video_from_images(
                 image_paths=valid_images,
                 durations=durations,
+                segment_audio_paths=segment_audio_paths,
                 fps=self.config.video.fps,
                 transition_duration=self.config.video.transition_duration
             )
@@ -212,17 +331,9 @@ class VideoAssemblyAgent:
                 logger.error("Failed to create video from images")
                 return None
             
-            # Generate narration if enabled
-            narration_path = None
-            preferences = context.get("preferences", {})
-            if preferences.get("narration", True):
-                logger.info("Generating narration")
-                narration_path = self.generate_narration(story)
-            
             # Get background music if enabled
             music_path = None
             if preferences.get("music", True) and self.config.video.background_music:
-                total_duration = sum(durations)
                 music_path = self.get_background_music(total_duration)
             
             # Get moral message for end card
@@ -238,11 +349,12 @@ class VideoAssemblyAgent:
                     filename = f"moral_video_{timestamp}.mp4"
                 output_path = get_output_path(filename)
             
-            # Create final video with narration, music, and end card
-            logger.info("Creating final video with narration and music")
+            # Create final video with background music and end card
+            # Note: narration is already embedded in video_path from per-segment audio
+            logger.info("Creating final video with background music and end card")
             final_video_path = self.video_tool.create_final_video(
                 video_path=video_path,
-                narration_audio=narration_path,
+                narration_audio=None,  # Already embedded in video
                 background_music=music_path,
                 moral_message=moral_lesson,
                 output_path=output_path
