@@ -217,31 +217,43 @@ Focus on consistency and child-friendly aesthetics."""
             for segment in script_segments:
                 scene_number = segment.get("scene_number", 0)
                 scene_description = segment.get("description", "")
+                scene_narration = segment.get("narration", "")
                 characters = segment.get("characters", [])
                 setting = segment.get("setting", context.get("setting", ""))
                 emotions = segment.get("emotions", [])
                 
-                # Get character reference descriptions with explicit type information
+                # Build complete character reference details with type, traits, and visual description
                 character_references = {}
                 for char_name in characters:
                     if char_name in character_descriptions:
                         char_desc = character_descriptions[char_name]
                         
+                        # Build comprehensive character reference
+                        char_type = char_desc.get("type", "character")
+                        traits = char_desc.get("traits", [])
+                        
                         # Prioritize visual analysis from reference image if available
+                        visual_description = ""
                         if char_desc.get("visual_analysis"):
-                            character_references[char_name] = char_desc["visual_analysis"]
-                        else:
-                            # Fallback to type and traits
-                            char_type = char_desc.get("type", "character")
-                            traits = char_desc.get("traits", [])
-                            traits_str = ", ".join(traits[:3]) if traits else "friendly"
-                            character_references[char_name] = f"a {char_type} character with {traits_str}"
+                            visual_description = char_desc["visual_analysis"]
+                        elif char_desc.get("description"):
+                            visual_description = char_desc["description"]
+                        
+                        # Create complete character reference dictionary
+                        character_references[char_name] = {
+                            "type": char_type,
+                            "traits": traits,
+                            "visual_description": visual_description
+                        }
+                        
+                        logger.debug(f"Scene {scene_number} - Character {char_name}: type={char_type}, traits={traits[:3]}, has_visual_desc={bool(visual_description)}")
                 
-                logger.info(f"Generating image for scene {scene_number}")
+                logger.info(f"Generating image for scene {scene_number} with {len(character_references)} character(s)")
                 
-                # Generate scene image
+                # Generate scene image with complete character details
                 image_path = self.image_tool.generate_scene_image(
                     scene_description=scene_description,
+                    scene_narration=scene_narration,
                     characters=characters,
                     setting=setting,
                     emotions=emotions,

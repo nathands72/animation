@@ -288,11 +288,12 @@ Focus on concrete visual details that will ensure consistency across multiple sc
     def generate_scene_image(
         self,
         scene_description: str,
+        scene_narration: str,
         characters: List[str],
         setting: str,
         emotions: List[str],
         scene_number: int,
-        character_references: Optional[Dict[str, str]] = None,
+        character_references: Optional[Dict[str, Dict[str, Any]]] = None,
         style: Optional[str] = None
     ) -> Optional[Path]:
         """
@@ -300,11 +301,13 @@ Focus on concrete visual details that will ensure consistency across multiple sc
         
         Args:
             scene_description: Description of the scene
+            scene_narration: Narration of the scene
             characters: List of character names in the scene
             setting: Setting description
             emotions: List of emotions to convey
             scene_number: Scene number
-            character_references: Optional dict mapping character names to reference descriptions
+            character_references: Optional dict mapping character names to character detail dicts
+                                 Each dict should contain: 'type', 'traits', 'visual_description'
             style: Optional art style
             
         Returns:
@@ -319,14 +322,34 @@ Focus on concrete visual details that will ensure consistency across multiple sc
             char_details = []
             for char_name in characters:
                 if char_name in character_references:
-                    char_details.append(f"{char_name} ({character_references[char_name]})")
+                    char_info = character_references[char_name]
+                    
+                    # Build comprehensive character description
+                    char_type = char_info.get('type', 'character')
+                    traits = char_info.get('traits', [])
+                    visual_desc = char_info.get('visual_description', '')
+                    
+                    # Format: "Name (a type character with traits: trait1, trait2; visual details)"
+                    char_desc_parts = [f"a {char_type}"]
+                    
+                    if traits:
+                        traits_str = ", ".join(traits[:3])  # Limit to top 3 traits
+                        char_desc_parts.append(f"with traits: {traits_str}")
+                    
+                    if visual_desc:
+                        char_desc_parts.append(visual_desc)
+                    
+                    full_char_desc = " ".join(char_desc_parts)
+                    char_details.append(f"{char_name} ({full_char_desc})")
                 else:
                     char_details.append(char_name)
-            characters_str = ", ".join(char_details)
+            
+            characters_str = "; ".join(char_details)  # Use semicolon to separate characters
             
             prompt = (
                 f"Characters: {characters_str}. "
                 f"Scene: {scene_description}. "
+                f"Narration: {scene_narration}. "
                 f"Setting: {setting}. "
                 f"Emotions: {emotions_str}. "
                 f"Animated scene, clear composition, "
@@ -337,6 +360,7 @@ Focus on concrete visual details that will ensure consistency across multiple sc
             characters_str = ", ".join(characters) if characters else "no characters"
             prompt = (
                 f"Scene: {scene_description}, "
+                f"Narration: {scene_narration}, "
                 f"Characters: {characters_str}, "
                 f"Setting: {setting}, "
                 f"Emotions: {emotions_str}, "
