@@ -213,6 +213,102 @@ class VideoAssemblyAgent:
             logger.error(f"Error generating segment narration: {e}")
             return None
     
+    def _split_story_into_segments(
+        self,
+        story: str,
+        num_segments: int
+    ) -> List[str]:
+        """
+        Split full story text into equal narrative chunks.
+        
+        This is a fallback method to ensure complete story coverage
+        when segment narrations are insufficient.
+        
+        Args:
+            story: Complete story text
+            num_segments: Number of segments to create
+            
+        Returns:
+            List of story chunks, one per segment
+        """
+        try:
+            # Split by sentences (handle ., !, ?)
+            import re
+            sentences = re.split(r'(?<=[.!?])\s+', story)
+            sentences = [s.strip() for s in sentences if s.strip()]
+            
+            if not sentences:
+                logger.warning("No sentences found in story")
+                return [story] * num_segments
+            
+            if len(sentences) < num_segments:
+                # If fewer sentences than segments, distribute evenly
+                logger.warning(f"Only {len(sentences)} sentences for {num_segments} segments")
+                chunks = []
+                for i in range(num_segments):
+                    idx = i * len(sentences) // num_segments
+                    chunks.append(sentences[idx] if idx < len(sentences) else "")
+                return chunks
+            
+            # Distribute sentences across segments
+            sentences_per_segment = len(sentences) // num_segments
+            remainder = len(sentences) % num_segments
+            
+            chunks = []
+            start_idx = 0
+            
+            for i in range(num_segments):
+                # Add extra sentence to first segments if remainder exists
+                chunk_size = sentences_per_segment + (1 if i < remainder else 0)
+                end_idx = start_idx + chunk_size
+                
+                chunk = ' '.join(sentences[start_idx:end_idx])
+                chunks.append(chunk)
+                start_idx = end_idx
+            
+            logger.info(f"Split story into {len(chunks)} chunks ({sentences_per_segment}-{sentences_per_segment+1} sentences each)")
+            return chunks
+            
+        except Exception as e:
+            logger.error(f"Error splitting story: {e}")
+            # Fallback: equal character-based split
+            chunk_size = len(story) // num_segments
+            return [story[i*chunk_size:(i+1)*chunk_size] for i in range(num_segments)]
+    
+    def _get_segment_narration_text(
+        self,
+        segment: Dict[str, Any],
+        story_chunk: str,
+        segment_index: int
+    ) -> str:
+        """
+        Get narration text for segment using hybrid approach.
+        
+        Prefers segment narration if substantial, otherwise uses story chunk.
+        
+        Args:
+            segment: Scene segment with optional narration
+            story_chunk: Corresponding chunk from full story split
+            segment_index: Index of the segment (0-based)
+            
+        Returns:
+            Narration text to use for TTS
+        """
+        segment_narration = segment.get("narration", "").strip()
+        
+        # If segment has substantial narration (at least 20 words), use it
+        if segment_narration and len(segment_narration.split()) >= 20:
+            logger.debug(f"Segment {segment_index + 1}: Using segment narration ({len(segment_narration.split())} words)")
+            return segment_narration
+        
+        # Otherwise, use story chunk as fallback
+        if segment_narration:
+            logger.info(f"Segment {segment_index + 1}: Segment narration too short ({len(segment_narration.split())} words), using story chunk")
+        else:
+            logger.info(f"Segment {segment_index + 1}: No segment narration, using story chunk")
+        
+        return story_chunk
+    
     def get_background_music(
         self,
         duration_seconds: float
@@ -284,28 +380,54 @@ class VideoAssemblyAgent:
             durations = []
             
             if preferences.get("narration", True):
-                logger.info("Generating per-segment narration")
+                logger.info("Generating per-segment narration with hybrid approach")
                 audio_output_dir = get_temp_path("", "audio")
                 
-                for i, segment in enumerate(script_segments):
-                    # Generate narration for this segment
-                    narration_info = self.generate_segment_narration(
+                # Split full story into chunks as fallback
+                story_chunks = self._split_story_into_segments(story, len(script_segments))
+                
+                for i, (segment, story_chunk) in enumerate(zip(script_segments, story_chunks)):
+                    # Use hybrid approach: prefer segment narration, fallback to story chunk
+                    narration_text = self._get_segment_narration_text(
                         segment=segment,
-                        segment_index=i,
-                        output_dir=audio_output_dir
+                        story_chunk=story_chunk,
+                        segment_index=i
                     )
                     
-                    if narration_info:
-                        # Use actual audio duration
-                        segment_audio_paths.append(narration_info["audio_path"])
-                        durations.append(narration_info["duration"])
-                        logger.info(f"Segment {i + 1}: {narration_info['duration']:.2f}s (from audio)")
-                    else:
-                        # No narration for this segment, use default duration
+                    if not narration_text.strip():
+                        logger.warning(f"Segment {i + 1} has no narration text, using default duration")
                         segment_audio_paths.append(None)
-                        default_duration = segment.get("duration_seconds", 5.0)
-                        durations.append(default_duration)
-                        logger.info(f"Segment {i + 1}: {default_duration:.2f}s (default, no narration)")
+                        durations.append(segment.get("duration_seconds", 5.0))
+                        continue
+                    
+                    # Generate narration audio
+                    scene_number = segment.get("scene_number", i + 1)
+                    output_path = audio_output_dir / f"segment_{scene_number}_narration.mp3"
+                    
+                    logger.info(f"Generating narration for segment {scene_number}: {narration_text[:50]}...")
+                    
+                    # Generate narration using appropriate TTS
+                    if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
+                        audio_path = self._generate_elevenlabs_narration(narration_text, output_path)
+                    else:
+                        audio_path = self._generate_gtts_narration(narration_text, output_path)
+                    
+                    if audio_path:
+                        # Use actual audio duration
+                        duration = self._get_audio_duration(audio_path)
+                        if duration > 0:
+                            segment_audio_paths.append(audio_path)
+                            durations.append(duration)
+                            logger.info(f"Segment {scene_number}: {duration:.2f}s (from audio)")
+                        else:
+                            logger.warning(f"Invalid audio duration for segment {scene_number}, using default")
+                            segment_audio_paths.append(None)
+                            durations.append(segment.get("duration_seconds", 5.0))
+                    else:
+                        # No narration audio generated, use default duration
+                        logger.warning(f"Failed to generate narration for segment {scene_number}")
+                        segment_audio_paths.append(None)
+                        durations.append(segment.get("duration_seconds", 5.0))
             else:
                 # No narration, use segment durations from script
                 logger.info("Narration disabled, using script segment durations")

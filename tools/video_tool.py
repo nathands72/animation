@@ -52,7 +52,7 @@ class VideoProcessingTool:
         """Initialize video processing tool."""
         self.config = get_config()
         try:
-            from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, TextClip
+            from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, concatenate_audioclips, AudioFileClip, TextClip
             from moviepy.video.fx.fadein import fadein
             from moviepy.video.fx.fadeout import fadeout
             self.moviepy = True
@@ -60,6 +60,7 @@ class VideoProcessingTool:
             self.ImageClip = ImageClip
             self.CompositeVideoClip = CompositeVideoClip
             self.concatenate_videoclips = concatenate_videoclips
+            self.concatenate_audioclips = concatenate_audioclips
             self.AudioFileClip = AudioFileClip
             self.TextClip = TextClip
             self.fadein = fadein
@@ -237,7 +238,7 @@ class VideoProcessingTool:
             elif audio.duration < video.duration:
                 # Loop audio if shorter than video
                 loops_needed = int(video.duration / audio.duration) + 1
-                audio = self.concatenate_videoclips([audio] * loops_needed)
+                audio = self.concatenate_audioclips([audio] * loops_needed)
                 audio = audio.subclip(0, video.duration)
             
             # Combine video and audio
@@ -407,7 +408,7 @@ class VideoProcessingTool:
                     elif music.duration < video.duration:
                         # Loop music if shorter
                         loops_needed = int(video.duration / music.duration) + 1
-                        music = self.concatenate_videoclips([music] * loops_needed)
+                        music = self.concatenate_audioclips([music] * loops_needed)
                         music = music.subclip(0, video.duration)
                     
                     # Composite audio (narration + music)
