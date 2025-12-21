@@ -45,6 +45,7 @@ except Exception as e:
     logger.warning(f"Could not configure ImageMagick: {e}")
 
 
+
 class VideoProcessingTool:
     """Video processing tool with MoviePy."""
     

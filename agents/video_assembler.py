@@ -6,6 +6,7 @@ from pathlib import Path
 
 from config import get_config
 from tools.video_tool import VideoProcessingTool
+from tools.audio_tool import AudioTool
 from utils.helpers import get_temp_path, get_output_path
 
 logger = logging.getLogger(__name__)
@@ -18,140 +19,9 @@ class VideoAssemblyAgent:
         """Initialize video assembly agent."""
         self.config = get_config()
         self.video_tool = VideoProcessingTool()
-        self._initialize_tts()
+        self.audio_tool = AudioTool()
     
-    def _initialize_tts(self):
-        """Initialize text-to-speech client."""
-        try:
-            if self.config.tts.provider == "elevenlabs" and self.config.tts.api_key:
-                from elevenlabs import generate, set_api_key
-                set_api_key(self.config.tts.api_key)
-                self.elevenlabs_available = True
-                logger.info("ElevenLabs TTS initialized")
-            else:
-                self.elevenlabs_available = False
-                logger.info("Using gTTS for text-to-speech")
-        except ImportError:
-            self.elevenlabs_available = False
-            logger.warning("ElevenLabs not installed, using gTTS")
-        except Exception as e:
-            self.elevenlabs_available = False
-            logger.warning(f"Error initializing ElevenLabs: {e}, using gTTS")
-    
-    def generate_narration(
-        self,
-        story: str,
-        output_path: Optional[Path] = None
-    ) -> Optional[Path]:
-        """
-        Generate narration audio from story text.
-        
-        Args:
-            story: Story text to narrate
-            output_path: Optional output path for audio file
-            
-        Returns:
-            Path to narration audio file, or None if generation failed
-        """
-        try:
-            logger.info("Generating narration audio")
-            
-            if output_path is None:
-                output_path = get_temp_path("narration.mp3", "audio")
-            
-            if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
-                return self._generate_elevenlabs_narration(story, output_path)
-            else:
-                return self._generate_gtts_narration(story, output_path)
-            
-        except Exception as e:
-            logger.error(f"Error generating narration: {e}")
-            return None
-    
-    def _generate_elevenlabs_narration(
-        self,
-        story: str,
-        output_path: Path
-    ) -> Optional[Path]:
-        """Generate narration using ElevenLabs."""
-        try:
-            from elevenlabs import generate, save
-            
-            voice_id = self.config.tts.voice_id or "21m00Tcm4TlvDq8ikWAM"  # Default voice
-            
-            audio = generate(
-                text=story,
-                voice=voice_id,
-                model="eleven_monolingual_v1"
-            )
-            
-            save(audio, str(output_path))
-            logger.info(f"Narration generated: {output_path}")
-            return output_path
-            
-        except Exception as e:
-            logger.error(f"Error with ElevenLabs: {e}")
-            return self._generate_gtts_narration(story, output_path)
-    
-    def _generate_gtts_narration(
-        self,
-        story: str,
-        output_path: Path
-    ) -> Optional[Path]:
-        """Generate narration using gTTS."""
-        try:
-            from gtts import gTTS
-            
-            logger.info("Generating narration with gTTS...")
-            tts = gTTS(text=story, lang=self.config.tts.language, slow=False)
-            tts.save(str(output_path))
-            
-            # Verify the file was created and has content
-            if output_path.exists() and output_path.stat().st_size > 0:
-                logger.info(f"Narration generated successfully: {output_path}")
-                return output_path
-            else:
-                logger.error("gTTS created an empty file")
-                return None
-            
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error generating gTTS narration: {error_msg}")
-            
-            # Provide helpful context for common errors
-            if "200" in error_msg or "OK" in error_msg:
-                logger.error("gTTS received HTTP 200 but failed to process audio. This may be due to:")
-                logger.error("  1. Network/firewall blocking Google TTS service")
-                logger.error("  2. Rate limiting from Google")
-                logger.error("  3. Corrupted gTTS installation")
-                logger.error("Solutions:")
-                logger.error("  - Try: pip install --upgrade gtts")
-                logger.error("  - Use ElevenLabs instead (set ELEVENLABS_API_KEY in .env)")
-                logger.error("  - Disable narration temporarily in preferences")
-            
-            return None
-    
-    def _get_audio_duration(self, audio_path: Path) -> float:
-        """
-        Get duration of audio file in seconds.
-        
-        Args:
-            audio_path: Path to audio file
-            
-        Returns:
-            Duration in seconds, or 0.0 if failed
-        """
-        try:
-            from moviepy.editor import AudioFileClip
-            
-            audio_clip = AudioFileClip(str(audio_path))
-            duration = audio_clip.duration
-            audio_clip.close()
-            
-            return duration
-        except Exception as e:
-            logger.error(f"Error getting audio duration: {e}")
-            return 0.0
+
     
     def generate_segment_narration(
         self,
@@ -185,18 +55,18 @@ class VideoAssemblyAgent:
             
             logger.info(f"Generating narration for segment {scene_number}: {narration_text[:50]}...")
             
-            # Generate narration using appropriate TTS
-            if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
-                audio_path = self._generate_elevenlabs_narration(narration_text, output_path)
+            # Generate narration using AudioTool
+            if self.audio_tool.elevenlabs_available and self.config.tts.provider == "elevenlabs":
+                audio_path = self.audio_tool.generate_elevenlabs_narration(narration_text, output_path)
             else:
-                audio_path = self._generate_gtts_narration(narration_text, output_path)
+                audio_path = self.audio_tool.generate_gtts_narration(narration_text, output_path)
             
             if not audio_path:
                 logger.warning(f"Failed to generate narration for segment {scene_number}")
                 return None
             
             # Get actual audio duration
-            duration = self._get_audio_duration(audio_path)
+            duration = self.audio_tool.get_audio_duration(audio_path)
             
             if duration <= 0:
                 logger.warning(f"Invalid audio duration for segment {scene_number}")
@@ -386,48 +256,14 @@ class VideoAssemblyAgent:
                 # Split full story into chunks as fallback
                 story_chunks = self._split_story_into_segments(story, len(script_segments))
                 
-                for i, (segment, story_chunk) in enumerate(zip(script_segments, story_chunks)):
-                    # Use hybrid approach: prefer segment narration, fallback to story chunk
-                    narration_text = self._get_segment_narration_text(
-                        segment=segment,
-                        story_chunk=story_chunk,
-                        segment_index=i
-                    )
-                    
-                    if not narration_text.strip():
-                        logger.warning(f"Segment {i + 1} has no narration text, using default duration")
-                        segment_audio_paths.append(None)
-                        durations.append(segment.get("duration_seconds", 5.0))
-                        continue
-                    
-                    # Generate narration audio
-                    scene_number = segment.get("scene_number", i + 1)
-                    output_path = audio_output_dir / f"segment_{scene_number}_narration.mp3"
-                    
-                    logger.info(f"Generating narration for segment {scene_number}: {narration_text[:50]}...")
-                    
-                    # Generate narration using appropriate TTS
-                    if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
-                        audio_path = self._generate_elevenlabs_narration(narration_text, output_path)
-                    else:
-                        audio_path = self._generate_gtts_narration(narration_text, output_path)
-                    
-                    if audio_path:
-                        # Use actual audio duration
-                        duration = self._get_audio_duration(audio_path)
-                        if duration > 0:
-                            segment_audio_paths.append(audio_path)
-                            durations.append(duration)
-                            logger.info(f"Segment {scene_number}: {duration:.2f}s (from audio)")
-                        else:
-                            logger.warning(f"Invalid audio duration for segment {scene_number}, using default")
-                            segment_audio_paths.append(None)
-                            durations.append(segment.get("duration_seconds", 5.0))
-                    else:
-                        # No narration audio generated, use default duration
-                        logger.warning(f"Failed to generate narration for segment {scene_number}")
-                        segment_audio_paths.append(None)
-                        durations.append(segment.get("duration_seconds", 5.0))
+                # Generate audio files for all segments using AudioTool
+                segment_audio_paths, durations = self.audio_tool.generate_segment_audio_files(
+                    script_segments=script_segments,
+                    story=story,
+                    story_chunks=story_chunks,
+                    audio_output_dir=audio_output_dir,
+                    get_segment_narration_text_fn=self._get_segment_narration_text
+                )
             else:
                 # No narration, use segment durations from script
                 logger.info("Narration disabled, using script segment durations")
