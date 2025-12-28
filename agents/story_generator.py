@@ -22,7 +22,8 @@ class StoryGeneratorAgent:
             model_name=self.config.llm.model,
             temperature=self.config.llm.temperature,
             max_tokens=self.config.llm.max_tokens,
-            api_key=self.config.llm.api_key
+            api_key=self.config.llm.api_key,
+            base_url=self.config.llm.base_url
         )
         
         # System prompt for story generation

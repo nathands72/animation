@@ -28,7 +28,15 @@ class ImageGenerationTool:
         try:
             if self.config.image_gen.provider == "dalle3" and self.config.image_gen.api_key:
                 from openai import OpenAI
-                self.openai_client = OpenAI(api_key=self.config.image_gen.api_key)
+                
+                # Build client parameters
+                client_params = {"api_key": self.config.image_gen.api_key}
+                
+                # Add base_url if available from LLM config
+                if hasattr(self.config, 'llm') and self.config.llm.base_url:
+                    client_params["base_url"] = self.config.llm.base_url
+                
+                self.openai_client = OpenAI(**client_params)
                 logger.info("OpenAI client initialized for image generation")
             else:
                 logger.warning("DALL-E 3 API key not found. Image generation will be disabled.")

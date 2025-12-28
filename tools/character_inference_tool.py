@@ -22,7 +22,8 @@ class CharacterInferenceTool:
         self.llm = ChatOpenAI(
             model_name=self.config.llm.model,
             temperature=0.3,  # Lower temperature for more consistent inference
-            api_key=self.config.llm.api_key
+            api_key=self.config.llm.api_key,
+            base_url=self.config.llm.base_url
         )
         
         # System prompt for character inference
