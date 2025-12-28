@@ -294,6 +294,7 @@ Focus on concrete visual details that will ensure consistency across multiple sc
         emotions: List[str],
         scene_number: int,
         character_references: Optional[Dict[str, Dict[str, Any]]] = None,
+        scene_background: Optional[str] = None,
         style: Optional[str] = None
     ) -> Optional[Path]:
         """
@@ -303,11 +304,12 @@ Focus on concrete visual details that will ensure consistency across multiple sc
             scene_description: Description of the scene
             scene_narration: Narration of the scene
             characters: List of character names in the scene
-            setting: Setting description
+            setting: Brief setting description (1-2 words)
             emotions: List of emotions to convey
             scene_number: Scene number
             character_references: Optional dict mapping character names to character detail dicts
                                  Each dict should contain: 'type', 'traits', 'visual_description'
+            scene_background: Optional detailed background description (2-3 sentences)
             style: Optional art style
             
         Returns:
@@ -315,6 +317,9 @@ Focus on concrete visual details that will ensure consistency across multiple sc
         """
         # Build comprehensive scene prompt with character details FIRST for consistency
         emotions_str = ", ".join(emotions) if emotions else "neutral"
+        
+        # Use detailed scene_background if provided, otherwise fall back to brief setting
+        background_description = scene_background if scene_background else setting
         
         # Start with character details to ensure DALL-E prioritizes them
         if character_references and characters:
@@ -350,7 +355,7 @@ Focus on concrete visual details that will ensure consistency across multiple sc
                 f"Characters: {characters_str}. "
                 f"Scene: {scene_description}. "
                 f"Narration: {scene_narration}. "
-                f"Setting: {setting}. "
+                f"Background: {background_description}. "
                 f"Emotions: {emotions_str}. "
                 f"Animated scene, clear composition, "
                 f"characters visible and expressive"
@@ -362,7 +367,7 @@ Focus on concrete visual details that will ensure consistency across multiple sc
                 f"Scene: {scene_description}, "
                 f"Narration: {scene_narration}, "
                 f"Characters: {characters_str}, "
-                f"Setting: {setting}, "
+                f"Background: {background_description}, "
                 f"Emotions: {emotions_str}, "
                 f"animated scene, clear composition, "
                 f"characters visible and expressive"

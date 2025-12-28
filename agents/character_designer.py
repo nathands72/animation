@@ -220,6 +220,7 @@ Focus on consistency and child-friendly aesthetics."""
                 scene_narration = segment.get("narration", "")
                 characters = segment.get("characters", [])
                 setting = segment.get("setting", context.get("setting", ""))
+                scene_background = segment.get("scene_background", None)
                 emotions = segment.get("emotions", [])
                 
                 # Build complete character reference details with type, traits, and visual description
@@ -259,6 +260,7 @@ Focus on consistency and child-friendly aesthetics."""
                     emotions=emotions,
                     scene_number=scene_number,
                     character_references=character_references if character_references else None,
+                    scene_background=scene_background,
                     style=art_style
                 )
                 

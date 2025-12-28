@@ -10,9 +10,9 @@ class LLMConfig:
     """LLM configuration settings."""
     
     provider: str = "openai"
-    model: str = "gpt-4"
+    model: str = "gpt-5.1"
     temperature: float = 0.7
-    max_tokens: int = 2000
+    max_tokens: int = 5000
     api_key: Optional[str] = None
     
     def __post_init__(self):
