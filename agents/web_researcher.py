@@ -74,12 +74,12 @@ Focus on actionable insights for creating an engaging, age-appropriate moral sto
             Dictionary with research results and summary
         """
         try:
-            logger.info(f"Executing web research with {len(search_queries)} queries")
+            logger.info(self._sanitize_text(f"Executing web research with {len(search_queries)} queries"))
             
             # Execute searches
             all_results = {}
             for query in search_queries:
-                logger.info(f"Searching: {query}")
+                logger.info(self._sanitize_text(f"Searching: {query}"))
                 results = self.search_tool.search(
                     query=query,
                     age_group=age_group,
@@ -113,7 +113,7 @@ Focus on actionable insights for creating an engaging, age-appropriate moral sto
             response = self.llm.invoke(formatted_prompt)
             research_summary = response.content
             
-            logger.info("Research completed successfully")
+            logger.info(self._sanitize_text("Research completed successfully"))
             
             return {
                 "research_results": all_results,
@@ -121,7 +121,7 @@ Focus on actionable insights for creating an engaging, age-appropriate moral sto
             }
             
         except Exception as e:
-            logger.error(f"Error in web research: {e}")
+            logger.error(self._sanitize_text(f"Error in web research: {e}"))
             # Graceful degradation: return empty research
             logger.warning("Falling back to empty research due to error")
             return {
@@ -149,13 +149,53 @@ Focus on actionable insights for creating an engaging, age-appropriate moral sto
             formatted.append(f"Results ({len(results)}):\n")
             
             for i, result in enumerate(results[:3], 1):  # Top 3 results per query
-                title = result.get("title", "Untitled")
-                content = result.get("content", "")[:300]  # First 300 chars
+                title = self._sanitize_text(result.get("title", "Untitled"))
+                content = self._sanitize_text(result.get("content", "")[:300])  # First 300 chars
                 formatted.append(f"{i}. {title}\n   {content}...\n")
             
             formatted.append("\n")
         
         return "\n".join(formatted)
+    
+    def _sanitize_text(self, text: str) -> str:
+        """
+        Sanitize text by replacing problematic Unicode characters with ASCII equivalents.
+        
+        Args:
+            text: Text to sanitize
+            
+        Returns:
+            Sanitized text safe for Windows console/file output
+        """
+        if not isinstance(text, str):
+            return str(text)
+        
+        # Replace common problematic Unicode characters
+        replacements = {
+            '\u2192': '->',   # Right arrow
+            '\u2190': '<-',   # Left arrow
+            '\u2194': '<->', # Left-right arrow
+            '\u2022': '*',    # Bullet point
+            '\u2013': '-',    # En dash
+            '\u2014': '--',   # Em dash
+            '\u201c': '"',    # Left double quote
+            '\u201d': '"',    # Right double quote
+            '\u2018': "'",    # Left single quote
+            '\u2019': "'",    # Right single quote
+            '\u2026': '...', # Horizontal ellipsis
+        }
+        
+        for unicode_char, replacement in replacements.items():
+            text = text.replace(unicode_char, replacement)
+        
+        # Handle any remaining non-ASCII characters
+        try:
+            text.encode('ascii')
+        except UnicodeEncodeError:
+            # Replace remaining problematic characters
+            text = text.encode('ascii', errors='replace').decode('ascii')
+        
+        return text
     
     def _format_context(self, context: Dict[str, Any]) -> str:
         """

@@ -10,9 +10,9 @@ class LLMConfig:
     """LLM configuration settings."""
     
     provider: str = "openai"
-    model: str = "gpt-5.1"
+    model: str = "gpt-4-turbo"
     temperature: float = 0.7
-    max_tokens: int = 5000
+    max_tokens: int = 12000
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     
@@ -158,7 +158,7 @@ class WorkflowConfig:
     def __post_init__(self):
         """Post-initialization setup."""
         # Share OpenAI API key between LLM and DALL-E if using same provider
-        if self.image_gen.provider == "dalle3" and not self.image_gen.api_key:
+        if self.image_gen.provider == "dalle3" and self.llm.provider == "openai" and not self.image_gen.api_key:
             self.image_gen.api_key = self.llm.api_key
 
 

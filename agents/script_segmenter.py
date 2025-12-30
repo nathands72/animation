@@ -46,7 +46,12 @@ class ScriptSegmentationAgent:
             temperature=self.config.llm.temperature,
             max_tokens=self.config.llm.max_tokens,
             api_key=self.config.llm.api_key,
-            base_url=self.config.llm.base_url
+            base_url=self.config.llm.base_url,
+            model_kwargs={
+                "max_completion_tokens": self.config.llm.max_tokens,  # Explicit output token limit
+                # Try to limit reasoning tokens if supported
+                "reasoning_effort": "low",  # or try "medium" if "low" doesn't work
+            }
         )
         self.output_parser = PydanticOutputParser(pydantic_object=ScriptSegments)
         

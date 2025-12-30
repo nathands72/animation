@@ -68,7 +68,7 @@ Generate a complete, engaging moral story that:
 - Is approximately 400-800 words (3-5 minutes when read aloud)
 - Has a clear beginning, conflict, and resolution
 
-Write the story now:"""
+Write the story now in less than 4000 words:"""
 
     def generate(
         self,
