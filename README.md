@@ -7,6 +7,10 @@ A production-grade multi-agent AI workflow system using LangChain and LangGraph 
 - **Multi-Agent Architecture**: Six specialized agents working together
 - **LangGraph Workflow**: State management and agent coordination
 - **Checkpoint & Resume**: Automatic progress saving and resume from any step
+- **Flexible LLM Configuration**: Agent-specific models, API keys, and settings
+- **Multi-Provider Image Generation**: Support for DALL-E 3, Gemini Imagen, and OpenRouter SD
+- **Character Consistency**: Automated character reference system for visual coherence
+- **Perfect Audio-Video Sync**: Per-segment narration with hybrid flow
 - **Child-Safe Content**: Content filtering at every stage
 - **Error Handling**: Comprehensive retry logic and graceful degradation
 - **Modular Design**: Easy to replace or modify agents
@@ -22,6 +26,39 @@ The system consists of six specialized agents:
 4. **Script Segmentation Agent**: Breaks story into visual scenes
 5. **Character Design Agent**: Generates consistent character visuals
 6. **Video Assembly Agent**: Compiles media into final video
+
+## Recent Improvements
+
+### 🎯 Per-Segment Narration with Hybrid Flow
+- **Perfect audio-video synchronization** - Each scene's duration matches its narration
+- **Complete story coverage** - Intelligent LLM splitting ensures 95%+ story coverage
+- **No audio truncation** - Full narration always plays
+- See [PER_SEGMENT_NARRATION_GUIDE.md](PER_SEGMENT_NARRATION_GUIDE.md) for details
+
+### 🎨 Multi-Provider Image Generation
+- **DALL-E 3** - Highest quality (recommended)
+- **Gemini Imagen** - Google's image generation
+- **OpenRouter SD** - Cost-effective Stable Diffusion
+- Easy provider switching via environment variables
+- See [IMAGE_GEN_QUICK_REF.md](IMAGE_GEN_QUICK_REF.md) for setup
+
+### 🤖 Flexible LLM Configuration
+- **Agent-specific models** - Use different models for different agents
+- **Custom API endpoints** - Support for OpenRouter and other providers
+- **Per-agent settings** - Independent temperature, max tokens, etc.
+- See [LLM_CONFIG_GUIDE.md](LLM_CONFIG_GUIDE.md) for configuration options
+
+### 👥 Character Reference System
+- **Automated character consistency** - Visual coherence across all scenes
+- **Optimized performance** - Single character analysis, reused across scenes
+- **Detailed descriptions** - Rich visual details in prompts
+- See [CHARACTER_REFERENCE_QUICK_SUMMARY.md](CHARACTER_REFERENCE_QUICK_SUMMARY.md)
+
+### 🔧 Other Improvements
+- **Unicode handling** - Fixed Windows encoding issues with sanitize_text
+- **Elaborate scene backgrounds** - 2-3 sentence descriptions for consistency
+- **Character identification** - Refined logic to avoid false positives
+- **Segment validation** - 8-12 segments with proper story distribution
 
 ## Installation
 
@@ -48,8 +85,15 @@ The system consists of six specialized agents:
 #### API Keys
 
 **Required:**
-- **OpenAI API Key**: For GPT-4 (story generation) and DALL-E 3 (image generation)
-  - Get from: https://platform.openai.com/api-keys
+- **LLM API Key**: For GPT-4 or compatible models (story generation, segmentation)
+  - OpenAI: https://platform.openai.com/api-keys
+  - OpenRouter: https://openrouter.ai/
+  - Or any OpenAI-compatible endpoint
+
+**Image Generation (choose one):**
+- **OpenAI API Key**: For DALL-E 3 (recommended for quality)
+- **Gemini API Key**: For Google Imagen
+- **OpenRouter API Key**: For Stable Diffusion (cost-effective)
 
 **Optional:**
 - **Tavily API Key**: For web search (graceful degradation if not provided)
@@ -132,10 +176,24 @@ sudo apt-get install imagemagick
 Create a `.env` file in the project root:
 
 ```bash
-# Required
-OPENAI_API_KEY=your-openai-api-key
+# Required: LLM Configuration
+LLM_API_KEY=your-api-key
+LLM_BASE_URL=https://api.openai.com/v1  # Or OpenRouter, etc.
 
-# Optional
+# Required: Image Generation (choose provider)
+IMAGE_GEN_PROVIDER=dalle3  # Options: dalle3, gemini, openrouter-sd
+IMAGE_GEN_API_KEY=your-api-key  # Or use provider-specific keys below
+
+# Provider-specific API keys (optional, overrides IMAGE_GEN_API_KEY)
+# OPENAI_API_KEY=sk-...      # For DALL-E 3
+# GEMINI_API_KEY=...         # For Gemini Imagen
+# OPENROUTER_API_KEY=sk-...  # For OpenRouter SD
+
+# Optional: Agent-specific LLM configuration
+# SCRIPT_SEGMENTER_MODEL=gpt-4-turbo
+# CHARACTER_DESIGNER_MODEL=gpt-4-turbo
+
+# Optional: Other services
 TAVILY_API_KEY=your-tavily-api-key
 ELEVENLABS_API_KEY=your-elevenlabs-api-key
 
@@ -147,14 +205,18 @@ Or set environment variables directly:
 
 **Windows (PowerShell):**
 ```powershell
-$env:OPENAI_API_KEY="your-openai-api-key"
+$env:LLM_API_KEY="your-api-key"
+$env:IMAGE_GEN_PROVIDER="dalle3"
+$env:IMAGE_GEN_API_KEY="your-api-key"
 $env:TAVILY_API_KEY="your-tavily-api-key"
 $env:ELEVENLABS_API_KEY="your-elevenlabs-api-key"
 ```
 
 **macOS/Linux:**
 ```bash
-export OPENAI_API_KEY="your-openai-api-key"
+export LLM_API_KEY="your-api-key"
+export IMAGE_GEN_PROVIDER="dalle3"
+export IMAGE_GEN_API_KEY="your-api-key"
 export TAVILY_API_KEY="your-tavily-api-key"
 export ELEVENLABS_API_KEY="your-elevenlabs-api-key"
 ```
@@ -322,8 +384,56 @@ project_root/
 
 Configuration is managed through `config.py` and environment variables. Key settings:
 
-- **LLM**: Model, temperature, max tokens
-- **Image Generation**: Provider, quality, style
+### LLM Configuration
+
+The system supports **flexible LLM configuration** with agent-specific settings:
+
+- **Global LLM**: Default settings for all agents
+- **Script Segmenter**: Separate model/API key for segmentation (supports higher token limits)
+- **Character Designer**: Separate model/API key for character design
+
+**Example configurations:**
+```bash
+# Use different models for different agents
+LLM_API_KEY=sk-your-key
+SCRIPT_SEGMENTER_MODEL=gpt-4-turbo
+CHARACTER_DESIGNER_MODEL=gpt-3.5-turbo
+
+# Use OpenRouter for script segmentation
+SCRIPT_SEGMENTER_API_KEY=sk-or-key
+SCRIPT_SEGMENTER_BASE_URL=https://openrouter.ai/api/v1
+SCRIPT_SEGMENTER_MODEL=anthropic/claude-3-opus
+```
+
+See [LLM_CONFIG_GUIDE.md](LLM_CONFIG_GUIDE.md) for complete documentation.
+
+### Image Generation
+
+Supports multiple providers with automatic fallback:
+
+- **DALL-E 3**: Highest quality, OpenAI (recommended)
+- **Gemini Imagen**: Google's image generation
+- **OpenRouter SD**: Cost-effective Stable Diffusion
+
+**Quick setup:**
+```bash
+# DALL-E 3 (recommended)
+IMAGE_GEN_PROVIDER=dalle3
+OPENAI_API_KEY=sk-your-key
+
+# Gemini Imagen
+IMAGE_GEN_PROVIDER=gemini
+GEMINI_API_KEY=your-key
+
+# OpenRouter SD (cost-effective)
+IMAGE_GEN_PROVIDER=openrouter-sd
+OPENROUTER_API_KEY=sk-or-key
+```
+
+See [IMAGE_GEN_QUICK_REF.md](IMAGE_GEN_QUICK_REF.md) for complete documentation.
+
+### Other Settings
+
 - **Text-to-Speech**: Provider, voice, language
 - **Video**: Resolution, FPS, transitions
 - **Retry**: Max retries, backoff strategy
@@ -332,8 +442,18 @@ Configuration is managed through `config.py` and environment variables. Key sett
 
 ### Required
 
-- **OpenAI API Key**: For GPT-4 (story generation) and DALL-E 3 (image generation)
-  - Get from: https://platform.openai.com/api-keys
+**LLM (Language Model):**
+- **LLM_API_KEY**: For GPT-4 or compatible models
+  - OpenAI: https://platform.openai.com/api-keys
+  - OpenRouter: https://openrouter.ai/
+  - Any OpenAI-compatible endpoint
+
+**Image Generation (choose one provider):**
+- **OPENAI_API_KEY**: For DALL-E 3 (recommended for quality)
+- **GEMINI_API_KEY**: For Google Imagen  
+- **OPENROUTER_API_KEY**: For Stable Diffusion (cost-effective)
+
+Or use the universal **IMAGE_GEN_API_KEY** with **IMAGE_GEN_PROVIDER** setting.
 
 ### Optional
 
@@ -407,11 +527,14 @@ python main.py -i story.json --estimate-cost
 ```
 
 Typical costs per video:
-- **LLM Tokens**: $0.10 - $0.30
-- **Image Generation**: $0.40 - $0.80 (10 images)
-- **Web Search**: $0.01 - $0.05
+- **LLM Tokens**: $0.10 - $0.30 (varies by provider and model)
+- **Image Generation**: 
+  - DALL-E 3: $0.40 - $0.80 (10 images)
+  - Gemini Imagen: $0.20 - $0.40 (10 images)
+  - OpenRouter SD: $0.05 - $0.15 (10 images)
+- **Web Search**: $0.01 - $0.05 (Tavily)
 - **Text-to-Speech**: $0.00 (gTTS) or $0.30 (ElevenLabs)
-- **Total**: ~$0.50 - $1.50 per video
+- **Total**: ~$0.50 - $1.50 per video (DALL-E 3) or ~$0.20 - $0.80 (OpenRouter SD)
 
 ## Troubleshooting
 
@@ -624,6 +747,18 @@ For issues and questions:
 
 - LangChain and LangGraph for workflow orchestration
 - OpenAI for GPT-4 and DALL-E 3
+- Google for Gemini Imagen
+- OpenRouter for multi-provider access
 - MoviePy for video processing
 - Tavily for web search
+
+## Additional Documentation
+
+- [LLM_CONFIG_GUIDE.md](LLM_CONFIG_GUIDE.md) - Flexible LLM configuration
+- [IMAGE_GEN_QUICK_REF.md](IMAGE_GEN_QUICK_REF.md) - Image generation setup
+- [IMAGE_GEN_CONFIG_GUIDE.md](IMAGE_GEN_CONFIG_GUIDE.md) - Detailed image config
+- [CHARACTER_REFERENCE_QUICK_SUMMARY.md](CHARACTER_REFERENCE_QUICK_SUMMARY.md) - Character consistency
+- [PER_SEGMENT_NARRATION_GUIDE.md](PER_SEGMENT_NARRATION_GUIDE.md) - Audio-video sync
+- [CHECKPOINT_QUICKSTART.md](CHECKPOINT_QUICKSTART.md) - Checkpoint system
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
 
