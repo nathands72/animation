@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 
 from config import get_config
 from utils.validators import validate_story_quality, validate_age_appropriateness
+from utils.helpers import sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ Write the story now in less than 4000 words:"""
             
             # Call LLM
             response = self.llm.invoke(formatted_prompt)
-            story = response.content.strip()
+            story = sanitize_text(response.content).strip()
             
             # Validate story quality
             is_valid, error_message = validate_story_quality(story, context)

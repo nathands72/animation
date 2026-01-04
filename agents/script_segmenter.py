@@ -10,6 +10,7 @@ from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 
 from config import get_config
+from utils.helpers import sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +43,11 @@ class ScriptSegmentationAgent:
         """Initialize script segmentation agent."""
         self.config = get_config()
         self.llm = ChatOpenAI(
-            model_name=self.config.llm.model,
-            temperature=self.config.llm.temperature,
-            max_tokens=self.config.llm.max_tokens,
-            api_key=self.config.llm.api_key,
-            base_url=self.config.llm.base_url,
-            model_kwargs={
-                "max_completion_tokens": self.config.llm.max_tokens,  # Explicit output token limit
-                # Try to limit reasoning tokens if supported
-                "reasoning_effort": "low",  # or try "medium" if "low" doesn't work
-            }
+            model_name=self.config.script_segmenter_llm.model,
+            temperature=self.config.script_segmenter_llm.temperature,
+            max_tokens=self.config.script_segmenter_llm.max_tokens,
+            api_key=self.config.script_segmenter_llm.api_key,
+            base_url=self.config.script_segmenter_llm.base_url
         )
         self.output_parser = PydanticOutputParser(pydantic_object=ScriptSegments)
         
@@ -63,15 +59,23 @@ YOU MUST INCLUDE 100% OF THE STORY TEXT IN THE SEGMENT NARRATIONS.
 DO NOT SKIP, SUMMARIZE, OR PARAPHRASE ANY PART OF THE STORY.
 EVERY SINGLE SENTENCE FROM THE STORY MUST APPEAR IN EXACTLY ONE SEGMENT'S NARRATION FIELD.
 
-Your role is to break a story into 8-20 visual scene segments where:
-1. THE ENTIRE STORY TEXT (EVERY WORD, EVERY SENTENCE) MUST BE DISTRIBUTED ACROSS SEGMENT NARRATIONS
-2. Each segment's narration should be a CONTINUOUS, VERBATIM portion of the original story
-3. Narration should flow naturally from one segment to the next with NO GAPS OR MISSING TEXT
-4. Each scene is 4-8 seconds long (adjust duration based on narration length)
-5. Each scene has clear visual elements (characters, setting, actions)
-6. Visual descriptions should match the narration content
-7. Each scene includes character emotions and expressions
-8. The total video duration matches the target (approximately 3-5 minutes)
+Your role is to break a story into EXACTLY 8-12 visual scene segments where:
+1. YOU MUST CREATE BETWEEN 8 AND 12 SEGMENTS - NO MORE, NO LESS
+2. THE ENTIRE STORY TEXT (EVERY WORD, EVERY SENTENCE) MUST BE DISTRIBUTED ACROSS SEGMENT NARRATIONS
+3. Each segment's narration should be a CONTINUOUS, VERBATIM portion of the original story
+4. Narration should flow naturally from one segment to the next with NO GAPS OR MISSING TEXT
+5. Each scene is 4-8 seconds long (adjust duration based on narration length)
+6. Each scene has clear visual elements (characters, setting, actions)
+7. Visual descriptions should match the narration content
+8. Each scene includes character emotions and expressions
+9. The total video duration matches the target (approximately 3-5 minutes)
+
+⚠️ SEGMENT COUNT RESTRICTION ⚠️
+YOU MUST CREATE BETWEEN 8 AND 12 SEGMENTS ONLY.
+Creating 13 or more segments is UNACCEPTABLE and will be rejected.
+Creating fewer than 8 segments is also UNACCEPTABLE.
+If the story is long, make each segment's narration longer (more text per segment).
+DO NOT exceed 12 segments under any circumstances.
 
 CRITICAL STORY COVERAGE REQUIREMENTS (READ CAREFULLY):
 ❌ DO NOT summarize the story - copy the exact text
@@ -82,6 +86,7 @@ CRITICAL STORY COVERAGE REQUIREMENTS (READ CAREFULLY):
 ✅ DO start with the very first word of the story
 ✅ DO end with the very last word of the story
 ✅ DO verify that concatenating all narrations = complete original story
+✅ DO create EXACTLY 8-12 segments (never more than 12, never fewer than 8)
 
 VERIFICATION CHECKLIST BEFORE SUBMITTING:
 1. Did I include the first sentence of the story in segment 1's narration? ✓
@@ -89,6 +94,8 @@ VERIFICATION CHECKLIST BEFORE SUBMITTING:
 3. Are there any sentences from the story that I skipped? (Answer must be NO)
 4. Did I paraphrase or summarize any part? (Answer must be NO)
 5. If I concatenate all segment narrations, does it equal the full story? (Answer must be YES)
+6. Did I create between 8 and 12 segments? (Answer must be YES - count your segments!)
+7. Is my segment count 12 or fewer? (Answer must be YES - exceeding 12 is FORBIDDEN)
 
 REQUIRED FIELDS FOR EVERY SEGMENT (INCLUDING THE LAST ONE):
 You MUST provide ALL of the following fields for EVERY segment without exception:
@@ -116,6 +123,16 @@ Example: If only the description mentions "Leo alone in the forest", then charac
 DO NOT omit characters even if they only appear briefly or are just mentioned in passing.
 The characters list should be comprehensive and include every character name that appears in the segment.
 
+IMPORTANT CHARACTER IDENTIFICATION RULES:
+- A character MUST be an individual named entity (person, animal, or creature) with a specific name
+- A character MUST have a defined type and traits (as provided in the Context section)
+- DO NOT include generic plural groups (e.g., "little animals", "the birds", "villagers")
+- DO NOT include unnamed background entities or crowds
+- ONLY include characters that appear in the Context's character list with their name, type, and traits
+
+Examples of VALID characters: "Leo", "Mia", "Golden Eagle", "Wise Owl"
+Examples of INVALID characters: "little animals", "the birds", "some villagers", "creatures"
+
 CRITICAL: The LAST segment is just as important as the first. Do NOT omit any fields in the final segment.
 
 IMPORTANT FOR VISUAL CONSISTENCY:
@@ -125,7 +142,7 @@ IMPORTANT FOR VISUAL CONSISTENCY:
 
 Ensure visual continuity between scenes (characters maintain consistent appearance)."""
 
-        self.human_prompt = """Break the following story into 8-20 visual scene segments:
+        self.human_prompt = """Break the following story into EXACTLY 8-12 visual scene segments (MINIMUM 8, MAXIMUM 12):
 
 Story:
 {story}
@@ -154,7 +171,8 @@ WHAT YOU MUST DO:
 ✅ Start segment 1 with the very first sentence of the story
 ✅ End the final segment with the very last sentence of the story
 ✅ Include EVERY sentence between the first and last
-✅ Create as many segments as needed (8-20) to cover the ENTIRE story
+✅ Create EXACTLY 8-12 segments (NEVER exceed 12 segments - this is a hard limit)
+✅ If the story is long, distribute more text per segment to stay within the 8-12 limit
 ✅ Split only at natural narrative breaks
 
 WHAT YOU MUST NOT DO:
@@ -164,6 +182,8 @@ WHAT YOU MUST NOT DO:
 ❌ DO NOT skip paragraphs because they seem less important
 ❌ DO NOT stop before reaching the end because you've hit a segment count
 ❌ DO NOT truncate the ending to fit a target duration
+❌ DO NOT create more than 12 segments - this is absolutely forbidden
+❌ DO NOT create fewer than 8 segments - this is also forbidden
 
 REQUIRED FIELDS - ALL 9 FIELDS MUST BE PRESENT IN EVERY SEGMENT:
 Every segment MUST include all of these fields:
@@ -180,9 +200,11 @@ Every segment MUST include all of these fields:
 IMPORTANT - CHARACTER LISTING RULES:
 When populating the "characters" field, you MUST:
 1. Read the description, dialogue, and narration for that segment
-2. Extract EVERY character name mentioned in ANY of those fields
-3. Include all extracted names in the characters array
-4. Do NOT omit characters even if they're only mentioned briefly
+2. Extract ONLY individual named characters (with type and traits from Context)
+3. Cross-reference each name with the Context's character list to verify it's a defined character
+4. Include all valid character names in the characters array
+5. Do NOT include plural groups, unnamed entities, or generic references
+6. Do NOT omit valid characters even if they're only mentioned briefly
 
 Examples of correct character listing:
 - Narration: "Leo showed the feather to Mia" → characters: ["Leo", "Mia"]
@@ -193,6 +215,16 @@ Examples of correct character listing:
 Examples of INCORRECT character listing (DO NOT DO THIS):
 - Narration: "Leo showed the feather to Mia" → characters: ["Leo"] ❌ (Missing Mia!)
 - Dialogue: "'Hello!' said Sam to Leo" → characters: ["Sam"] ❌ (Missing Leo!)
+
+Examples of CORRECT vs INCORRECT character identification:
+✅ CORRECT: Narration mentions "Leo and Mia saw some little animals" → characters: ["Leo", "Mia"]
+❌ INCORRECT: → characters: ["Leo", "Mia", "little animals"]
+
+✅ CORRECT: Description says "The Golden Eagle flew above the forest creatures" → characters: ["Golden Eagle"]
+❌ INCORRECT: → characters: ["Golden Eagle", "forest creatures"]
+
+✅ CORRECT: Dialogue: "'Look at the birds!' said Sam to Leo" → characters: ["Sam", "Leo"]
+❌ INCORRECT: → characters: ["Sam", "Leo", "the birds"]
 
 Example of a COMPLETE segment with ALL required fields:
 {{
@@ -214,10 +246,12 @@ SELF-CHECK BEFORE SUBMITTING YOUR RESPONSE:
 □ Did I copy the text exactly without paraphrasing or summarizing?
 □ Does every segment have all 9 required fields?
 □ If I concatenate all narrations, do I get the complete original story?
+□ Did I create between 8 and 12 segments? (COUNT THEM: 1, 2, 3... must be ≥8 and ≤12)
+□ Is my total segment count 12 or less? (If you have 13+ segments, you FAILED)
 
 If you cannot answer YES to all of the above, DO NOT SUBMIT. Go back and fix it.
 
-CRITICAL REMINDER: The LAST segment (segment 8-20) MUST have ALL 9 fields just like the first segment. Do not omit duration_seconds, setting, scene_background, or emotions from the final segment.
+CRITICAL REMINDER: The LAST segment (segment 8-12) MUST have ALL 9 fields just like the first segment. Do not omit duration_seconds, setting, scene_background, or emotions from the final segment.
 
 Now segment the story above following these requirements."""
 

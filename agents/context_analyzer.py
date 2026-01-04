@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from config import get_config
 from utils.validators import validate_input
+from utils.helpers import sanitize_text
 
 logger = logging.getLogger(__name__)
 

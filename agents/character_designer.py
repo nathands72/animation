@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTempla
 
 from config import get_config
 from tools.image_gen_tool import ImageGenerationTool
-from utils.helpers import get_temp_path
+from utils.helpers import get_temp_path, sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +21,11 @@ class CharacterDesignAgent:
         """Initialize character design agent."""
         self.config = get_config()
         self.llm = ChatOpenAI(
-            model_name=self.config.llm.model,
-            temperature=self.config.llm.temperature,
-            max_tokens=self.config.llm.max_tokens,
-            api_key=self.config.llm.api_key,
-            base_url=self.config.llm.base_url
+            model_name=self.config.character_designer_llm.model,
+            temperature=self.config.character_designer_llm.temperature,
+            max_tokens=self.config.character_designer_llm.max_tokens,
+            api_key=self.config.character_designer_llm.api_key,
+            base_url=self.config.character_designer_llm.base_url
         )
         self.image_tool = ImageGenerationTool()
         
@@ -66,6 +66,8 @@ Focus on physical appearance, clothing, colors, and distinctive features that ma
 
 **IMPORTANT**: Some characters may not have predefined traits. For these characters, infer appropriate 
 personality traits and visual characteristics based on their type and role in the story context.
+
+**RESTRICTION**: Limit the design description within 3000 characters for each character.
 
 Format your response as follows for each character:
 **[Character Name]**: [Detailed visual description including character type, physical features, clothing, colors, and personality-reflecting visual elements]
@@ -130,7 +132,7 @@ Focus on consistency and child-friendly aesthetics."""
                     response = self.llm.invoke(formatted_prompt)
                     
                     # Parse LLM response to extract character descriptions
-                    llm_descriptions = self._parse_llm_character_response(response.content, characters)
+                    llm_descriptions = self._parse_llm_character_response(sanitize_text(response.content), characters)
                     
                 except Exception as e:
                     logger.warning(f"LLM character design generation failed: {e}. Using fallback method.")
@@ -215,6 +217,64 @@ Focus on consistency and child-friendly aesthetics."""
             
             scene_images = []
             
+            # Build complete character reference details once for all distinct characters
+            # found in all segments before looping through script_segments
+            all_characters = set()
+            for segment in script_segments:
+                all_characters.update(segment.get("characters", []))
+            
+            logger.info(f"Building character references for {len(all_characters)} distinct character(s)")
+            
+            character_references = {}
+            for char_name in all_characters:
+                if char_name in character_descriptions:
+                    char_desc = character_descriptions[char_name]
+                    
+                    # Build comprehensive character reference
+                    char_type = char_desc.get("type", "character")
+                    traits = char_desc.get("traits", [])
+                    
+                    # Prioritize visual analysis from reference image if available
+                    visual_description = ""
+                    if char_desc.get("visual_analysis"):
+                        visual_description = char_desc["visual_analysis"]
+                    elif char_desc.get("description"):
+                        visual_description = char_desc["description"]
+
+                    # Get reference image path if available
+                    reference_image_path = char_desc.get("reference_image_path")
+                    
+                    # Build comprehensive character description for character_detail
+                    # Format: "Name (a type character with traits: trait1, trait2; visual details)"
+                    char_desc_parts = [f"a {char_type}"]
+                    
+                    if traits:
+                        traits_str = ", ".join(traits[:3])  # Limit to top 3 traits
+                        char_desc_parts.append(f"with traits: {traits_str}")
+                    
+                    if visual_description:
+                        char_desc_parts.append(visual_description)
+                    
+                    full_char_desc = " ".join(char_desc_parts)
+                    character_detail = f"{char_name} ({full_char_desc})"
+                    
+                    # Summarize character_detail if it exceeds 800 characters
+                    if len(character_detail) > 800:
+                        logger.info(f"Character detail for {char_name} is {len(character_detail)} chars, summarizing...")
+                        character_detail = self.image_tool.summarize_character_descriptions(
+                            character_detail, 
+                            max_length=800
+                        )
+                    
+                    # Create complete character reference dictionary
+                    character_references[char_name] = {
+                        "character_detail": character_detail,
+                        "reference_image_path": reference_image_path,
+                    }
+                    
+                    logger.debug(f"Character {char_name}: type={char_type}, traits={traits[:3]}, has_visual_desc={bool(visual_description)}, has_ref_image={bool(reference_image_path)}")
+            
+            # Now loop through segments to generate scene images
             for segment in script_segments:
                 scene_number = segment.get("scene_number", 0)
                 scene_description = segment.get("description", "")
@@ -224,33 +284,7 @@ Focus on consistency and child-friendly aesthetics."""
                 scene_background = segment.get("scene_background", None)
                 emotions = segment.get("emotions", [])
                 
-                # Build complete character reference details with type, traits, and visual description
-                character_references = {}
-                for char_name in characters:
-                    if char_name in character_descriptions:
-                        char_desc = character_descriptions[char_name]
-                        
-                        # Build comprehensive character reference
-                        char_type = char_desc.get("type", "character")
-                        traits = char_desc.get("traits", [])
-                        
-                        # Prioritize visual analysis from reference image if available
-                        visual_description = ""
-                        if char_desc.get("visual_analysis"):
-                            visual_description = char_desc["visual_analysis"]
-                        elif char_desc.get("description"):
-                            visual_description = char_desc["description"]
-                        
-                        # Create complete character reference dictionary
-                        character_references[char_name] = {
-                            "type": char_type,
-                            "traits": traits,
-                            "visual_description": visual_description
-                        }
-                        
-                        logger.debug(f"Scene {scene_number} - Character {char_name}: type={char_type}, traits={traits[:3]}, has_visual_desc={bool(visual_description)}")
-                
-                logger.info(f"Generating image for scene {scene_number} with {len(character_references)} character(s)")
+                logger.info(f"Generating image for scene {scene_number} with {len(characters)} character(s)")
                 
                 # Generate scene image with complete character details
                 image_path = self.image_tool.generate_scene_image(
@@ -369,9 +403,9 @@ Focus on consistency and child-friendly aesthetics."""
                 
                 # Look for patterns like "CharacterName:" or "- CharacterName:" followed by description
                 patterns = [
-                    rf"{char_name}[:\-]\s*(.+?)(?=\n\n|\n[A-Z]|$)",  # Name: description
-                    rf"\*\*{char_name}\*\*[:\-]?\s*(.+?)(?=\n\n|\n\*\*|$)",  # **Name**: description
+                    rf"\*\*{char_name}\*\*[:\-]?\s*(.+?)(?=\n\*\*|$)",  # **Name**: description
                     rf"#{1,3}\s*{char_name}[:\-]?\s*(.+?)(?=\n#|\n\n|$)",  # # Name: description
+                    rf"{char_name}[:\-]\s*(.+?)(?=\n\n|\n[A-Z]|$)",  # Name: description
                 ]
                 
                 for pattern in patterns:

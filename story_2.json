@@ -1,0 +1,45 @@
+{
+    "context": {
+        "theme": "bravery",
+        "characters": [
+            {
+                "name": "Aru",
+                "type": "young deer",
+                "traits": [
+                    "gentle",
+                    "timid",
+                    "kind-hearted"
+                ]
+            },
+            {
+                "name": "Kavi",
+                "type": "monkey",
+                "traits": [
+                    "playful",
+                    "clever",
+                    "supportive"
+                ]
+            },
+            {
+                "name": "Tara",
+                "type": "elephant",
+                "traits": [
+                    "strong",
+                    "calm",
+                    "protective"
+                ]
+            }
+        ],
+        "setting": "lush riverside jungle near a small village",
+        "moral_lesson": "Bravery is not the absence of fear, but the courage to do the right thing despite fear",
+        "age_group": "6-8",
+        "duration_minutes": 4
+    },
+    "preferences": {
+        "art_style": "cartoon",
+        "narration": true,
+        "music": true,
+        "music_mood": "inspiring and warm",
+        "color_palette": "bright and natural"
+    }
+}

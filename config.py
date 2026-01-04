@@ -10,7 +10,29 @@ class LLMConfig:
     """LLM configuration settings."""
     
     provider: str = "openai"
-    model: str = "gpt-4-turbo"
+    model: str = "openai/gpt-5-mini"
+    temperature: float = 0.7
+    max_tokens: int = 5000
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    
+    def __post_init__(self):
+        """Load API key and base URL from environment if not provided."""
+        if self.api_key is None:
+            self.api_key = os.getenv("LLM_API_KEY")
+        if not self.api_key:
+            raise ValueError("LLM_API_KEY environment variable is required")
+        
+        if self.base_url is None:
+            self.base_url = os.getenv("LLM_BASE_URL")
+
+
+@dataclass
+class ScriptSegmenterLLMConfig:
+    """LLM configuration settings for Script Segmenter agent."""
+    
+    provider: str = "openai"
+    model: str = None
     temperature: float = 0.7
     max_tokens: int = 12000
     api_key: Optional[str] = None
@@ -18,13 +40,67 @@ class LLMConfig:
     
     def __post_init__(self):
         """Load API key and base URL from environment if not provided."""
+        # Try script_segmenter-specific env vars first, fall back to general OPENAI vars
         if self.api_key is None:
-            self.api_key = os.getenv("OPENAI_API_KEY")
+            self.api_key = os.getenv("SCRIPT_SEGMENTER_API_KEY") or os.getenv("LLM_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+            raise ValueError("SCRIPT_SEGMENTER_API_KEY or LLM_API_KEY environment variable is required")
         
         if self.base_url is None:
-            self.base_url = os.getenv("OPENAI_BASE_URL")
+            self.base_url = os.getenv("SCRIPT_SEGMENTER_BASE_URL") or os.getenv("LLM_BASE_URL")
+        
+        # Override model if specified in env
+        env_model = os.getenv("SCRIPT_SEGMENTER_MODEL")
+        if env_model:
+            self.model = env_model
+        
+        # Override temperature if specified in env
+        env_temp = os.getenv("SCRIPT_SEGMENTER_TEMPERATURE")
+        if env_temp:
+            self.temperature = float(env_temp)
+        
+        # Override max_tokens if specified in env
+        env_max_tokens = os.getenv("SCRIPT_SEGMENTER_MAX_TOKENS")
+        if env_max_tokens:
+            self.max_tokens = int(env_max_tokens)
+
+
+@dataclass
+class CharacterDesignerLLMConfig:
+    """LLM configuration settings for Character Designer agent."""
+    
+    provider: str = "openai"
+    model: str = None
+    temperature: float = 0.7
+    max_tokens: int = 5000
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    
+    def __post_init__(self):
+        """Load API key and base URL from environment if not provided."""
+        # Try character_designer-specific env vars first, fall back to general OPENAI vars
+        if self.api_key is None:
+            self.api_key = os.getenv("CHARACTER_DESIGNER_API_KEY") or os.getenv("LLM_API_KEY")
+        if not self.api_key:
+            raise ValueError("CHARACTER_DESIGNER_API_KEY or LLM_API_KEY environment variable is required")
+        
+        if self.base_url is None:
+            self.base_url = os.getenv("CHARACTER_DESIGNER_BASE_URL") or os.getenv("LLM_BASE_URL")
+        
+        # Override model if specified in env
+        env_model = os.getenv("CHARACTER_DESIGNER_MODEL")
+        if env_model:
+            self.model = env_model
+        
+        # Override temperature if specified in env
+        env_temp = os.getenv("CHARACTER_DESIGNER_TEMPERATURE")
+        if env_temp:
+            self.temperature = float(env_temp)
+        
+        # Override max_tokens if specified in env
+        env_max_tokens = os.getenv("CHARACTER_DESIGNER_MAX_TOKENS")
+        if env_max_tokens:
+            self.max_tokens = int(env_max_tokens)
 
 
 @dataclass
@@ -53,26 +129,95 @@ class SearchConfig:
 class ImageGenConfig:
     """Image generation API configuration."""
     
-    provider: str = "dalle3"  # or "stable-diffusion", "midjourney"
+    provider: str = "dalle3"  # or "stable-diffusion", "gemini", "openrouter-sd"
     api_key: Optional[str] = None
+    base_url: Optional[str] = None
     model: str = "dall-e-3"
     size: str = "1024x1024"  # Will be resized to 1920x1080
     quality: str = "standard"
     style: str = "vivid"
     
+    # Gemini-specific settings
+    gemini_model: str = "imagen-3.0-generate-001"
+    
+    # Stable Diffusion-specific settings
+    sd_steps: int = 30
+    sd_cfg_scale: float = 7.0
+    sd_sampler: str = "DPM++ 2M Karras"
+    
     def __post_init__(self):
-        """Load API key from environment if not provided."""
+        """Load configuration from environment variables."""
+        # Load provider from env
+        env_provider = os.getenv("IMAGE_GEN_PROVIDER")
+        if env_provider:
+            self.provider = env_provider.lower()
+        
+        # Load API key based on provider
         if self.api_key is None:
             if self.provider == "dalle3":
-                self.api_key = os.getenv("OPENAI_API_KEY")
+                self.api_key = os.getenv("IMAGE_GEN_API_KEY") or os.getenv("LLM_API_KEY")
             elif self.provider == "stable-diffusion":
-                self.api_key = os.getenv("STABLE_DIFFUSION_API_KEY")
-            elif self.provider == "midjourney":
-                self.api_key = os.getenv("MIDJOURNEY_API_KEY")
+                self.api_key = os.getenv("IMAGE_GEN_API_KEY") or os.getenv("STABLE_DIFFUSION_API_KEY")
+            elif self.provider == "gemini":
+                self.api_key = os.getenv("IMAGE_GEN_API_KEY") or os.getenv("GEMINI_API_KEY")
+            elif self.provider == "openrouter-sd":
+                self.api_key = os.getenv("IMAGE_GEN_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+            else:
+                self.api_key = os.getenv("IMAGE_GEN_API_KEY")
         
-        if not self.api_key and self.provider == "dalle3":
-            # Try to use OpenAI key from LLM config
-            pass
+        # Load base URL from env
+        if self.base_url is None:
+            self.base_url = os.getenv("IMAGE_GEN_BASE_URL")
+            
+            # Set default base URLs for specific providers
+            if not self.base_url:
+                if self.provider == "openrouter-sd":
+                    self.base_url = "https://openrouter.ai/api/v1"
+                elif self.provider == "gemini":
+                    self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+        
+        # Load model from env
+        env_model = os.getenv("IMAGE_GEN_MODEL")
+        if env_model:
+            self.model = env_model
+        
+        # Load size from env
+        env_size = os.getenv("IMAGE_GEN_SIZE")
+        if env_size:
+            self.size = env_size
+        
+        # Load quality from env
+        env_quality = os.getenv("IMAGE_GEN_QUALITY")
+        if env_quality:
+            self.quality = env_quality
+        
+        # Load style from env
+        env_style = os.getenv("IMAGE_GEN_STYLE")
+        if env_style:
+            self.style = env_style
+        
+        # Load Gemini-specific settings
+        env_gemini_model = os.getenv("GEMINI_IMAGE_MODEL")
+        if env_gemini_model:
+            self.gemini_model = env_gemini_model
+        
+        # Load Stable Diffusion-specific settings
+        env_sd_steps = os.getenv("SD_STEPS")
+        if env_sd_steps:
+            self.sd_steps = int(env_sd_steps)
+        
+        env_sd_cfg = os.getenv("SD_CFG_SCALE")
+        if env_sd_cfg:
+            self.sd_cfg_scale = float(env_sd_cfg)
+        
+        env_sd_sampler = os.getenv("SD_SAMPLER")
+        if env_sd_sampler:
+            self.sd_sampler = env_sd_sampler
+        
+        # Validate API key
+        if not self.api_key:
+            logger_msg = f"Warning: {self.provider.upper()} API key not found. Image generation may fail."
+            print(logger_msg)
 
 
 @dataclass
@@ -138,6 +283,8 @@ class WorkflowConfig:
     """Main workflow configuration."""
     
     llm: LLMConfig = field(default_factory=LLMConfig)
+    script_segmenter_llm: ScriptSegmenterLLMConfig = field(default_factory=ScriptSegmenterLLMConfig)
+    character_designer_llm: CharacterDesignerLLMConfig = field(default_factory=CharacterDesignerLLMConfig)
     search: SearchConfig = field(default_factory=SearchConfig)
     image_gen: ImageGenConfig = field(default_factory=ImageGenConfig)
     tts: TTSConfig = field(default_factory=TTSConfig)

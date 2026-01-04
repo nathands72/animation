@@ -9,6 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 from config import get_config
+from utils.helpers import sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ class CharacterInferenceTool:
 For each character mentioned, you must infer:
 1. Character type: What kind of creature or being they are (e.g., lion, owl, monkey, phoenix, dragon, rabbit, fox, human child, wizard, etc.)
 2. Personality traits: 2-3 traits based on their dialogue, actions, and how they're described (e.g., brave, wise, mischievous, kind, cunning, etc.)
+
+NOTE: If the character type and traits are already present in the character context, you use them as reference to verify your inference based on the story segments.
 
 CRITICAL: You must respond with ONLY a valid JSON object. Do not include markdown code blocks, explanations, or any other text.
 
@@ -77,15 +80,26 @@ Example format (use ACTUAL character names, not these placeholders):
                 script_segments
             )
             
+            # Get existing characters from story context
+            existing_characters = story_context.get("characters", [])
+            existing_character_names = {char.get("name"): char for char in existing_characters}
+            
             # Format character information for LLM
             char_info_parts = []
             for char_name, context in character_contexts.items():
                 char_info_parts.append(f"**{char_name}**:")
                 if context["descriptions"]:
-                    char_info_parts.append(f"  Descriptions: {' | '.join(context['descriptions'][:3])}")
+                    char_info_parts.append(f"  Descriptions: {' | '.join(context['descriptions'][:5])}")
                 if context["dialogues"]:
-                    char_info_parts.append(f"  Dialogues: {' | '.join(context['dialogues'][:3])}")
-            
+                    char_info_parts.append(f"  Dialogues: {' | '.join(context['dialogues'][:5])}")
+                
+                # Add existing character info if available
+                if char_name in existing_character_names:
+                    if existing_character_names[char_name].get("type"):
+                        char_info_parts.append(f"  Type: {existing_character_names[char_name]['type']}")
+                    if existing_character_names[char_name].get("traits"):
+                        char_info_parts.append(f"  Traits: {existing_character_names[char_name]['traits']}")
+             
             # Format prompt
             formatted_prompt = self.inference_prompt.format_messages(
                 character_info="\n".join(char_info_parts),
@@ -99,14 +113,14 @@ Example format (use ACTUAL character names, not these placeholders):
             response = self.llm.invoke(formatted_prompt)
             
             # Log the full response for debugging
-            logger.debug(f"LLM Response: {response.content}")
+            logger.debug(f"LLM Response: {sanitize_text(response.content)}")
             
             # Parse LLM response
-            inferred_characters = self._parse_llm_response(response.content, character_names)
+            inferred_characters = self._parse_llm_response(sanitize_text(response.content), character_names)
             
             if not inferred_characters:
                 logger.warning("No characters were successfully inferred from LLM response")
-                logger.info(f"LLM response was: {response.content[:500]}...")
+                logger.info(f"LLM response was: {sanitize_text(response.content)[:500]}...")
             
             logger.info(f"Successfully inferred details for {len(inferred_characters)} characters")
             return inferred_characters

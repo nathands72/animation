@@ -263,3 +263,43 @@ def clean_temp_files(workflow_id: Optional[str] = None) -> None:
                 except Exception:
                     pass  # Skip files that can't be deleted
 
+
+def sanitize_text(text: str) -> str:
+    """
+    Sanitize text by replacing problematic Unicode characters with ASCII equivalents.
+    
+    Args:
+        text: Text to sanitize
+        
+    Returns:
+        Sanitized text safe for Windows console/file output
+    """
+    if not isinstance(text, str):
+        return str(text)
+    
+    # Replace common problematic Unicode characters
+    replacements = {
+        '\u2192': '->',   # Right arrow
+        '\u2190': '<-',   # Left arrow
+        '\u2194': '<->', # Left-right arrow
+        '\u2022': '*',    # Bullet point
+        '\u2013': '-',    # En dash
+        '\u2014': '--',   # Em dash
+        '\u201c': '"',    # Left double quote
+        '\u201d': '"',    # Right double quote
+        '\u2018': "'",    # Left single quote
+        '\u2019': "'",    # Right single quote
+        '\u2026': '...', # Horizontal ellipsis
+    }
+    
+    for unicode_char, replacement in replacements.items():
+        text = text.replace(unicode_char, replacement)
+    
+    # Handle any remaining non-ASCII characters
+    try:
+        text.encode('ascii')
+    except UnicodeEncodeError:
+        # Replace remaining problematic characters
+        text = text.encode('ascii', errors='replace').decode('ascii')
+    
+    return text
