@@ -27,6 +27,8 @@ The system consists of six specialized agents:
 5. **Character Design Agent**: Generates consistent character visuals
 6. **Video Assembly Agent**: Compiles media into final video
 
+> **📐 For detailed architecture documentation with diagrams, see [ARCHITECTURE.md](ARCHITECTURE.md)**
+
 ## Recent Improvements
 
 ### 🎯 Per-Segment Narration with Hybrid Flow
@@ -754,6 +756,7 @@ For issues and questions:
 
 ## Additional Documentation
 
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture with diagrams
 - [LLM_CONFIG_GUIDE.md](LLM_CONFIG_GUIDE.md) - Flexible LLM configuration
 - [IMAGE_GEN_QUICK_REF.md](IMAGE_GEN_QUICK_REF.md) - Image generation setup
 - [IMAGE_GEN_CONFIG_GUIDE.md](IMAGE_GEN_CONFIG_GUIDE.md) - Detailed image config
