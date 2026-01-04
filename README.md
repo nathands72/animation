@@ -62,6 +62,69 @@ The system consists of six specialized agents:
 - **Character identification** - Refined logic to avoid false positives
 - **Segment validation** - 8-12 segments with proper story distribution
 
+## 🛡️ Child Safety Guardrails
+
+The system implements a **three-layer safety architecture** to ensure 100% kid-safe content generation:
+
+### Layer 1: Pre-Generation Content Policy Check
+Before writing any story, the AI performs a mandatory safety review:
+- **Analyzes** input context for unsafe elements (violence, scary content, etc.)
+- **Rewrites** problematic elements while preserving the original moral lesson and intent
+- **Confirms** compliance with all children's safety rules
+- **Proceeds** only with the sanitized, kid-friendly version
+
+### Layer 2: During-Generation Constraints
+While generating stories, the AI follows strict guidelines:
+
+**Strictly Forbidden Content (10 categories):**
+- ❌ Violence, harm, injury, weapons, fighting
+- ❌ Scary, dark, or disturbing scenes
+- ❌ Death, blood, fear, nightmares, monsters, ghosts
+- ❌ Vulgarity, insults, name-calling, teasing
+- ❌ Mature themes, romance, politics
+- ❌ Unsafe behaviors (fire, chemicals, running away)
+- ❌ Sad or distressing situations
+- ❌ Natural disasters, accidents, emergencies
+- ❌ Characters in danger or getting lost
+- ❌ Punishment, scolding, negative consequences
+
+**Mandatory Positive Requirements (10 requirements):**
+- ✅ Positive, gentle, warm, encouraging tone
+- ✅ Promote kindness, empathy, teamwork, problem-solving
+- ✅ Characters helping each other
+- ✅ Non-violent conflict resolution
+- ✅ Safe, friendly character motivations
+- ✅ Cheerful, uplifting language
+- ✅ Happy, supported characters
+- ✅ Healthy friendships and positive interactions
+- ✅ Celebrate effort, learning, growth
+
+### Layer 3: Post-Generation Safety Validation
+After writing the story, the AI validates against a **15-point safety checklist**:
+
+1. ✅ Contains NO violence, harm, injury, weapons, or fighting
+2. ✅ Contains NO scary, dark, or disturbing scenes
+3. ✅ Contains NO death, blood, fear, nightmares, monsters, or ghosts
+4. ✅ Contains NO vulgarity, insults, name-calling, or teasing
+5. ✅ Contains NO mature themes, romance, or politics
+6. ✅ Contains NO unsafe behaviors
+7. ✅ Contains NO sad or distressing situations
+8. ✅ Contains NO natural disasters, accidents, or emergencies
+9. ✅ Contains NO characters getting lost, separated, or in danger
+10. ✅ Contains NO punishment, scolding, or negative consequences
+11. ✅ Uses ONLY positive, gentle, warm, and encouraging tone
+12. ✅ Promotes kindness, empathy, teamwork, and problem-solving
+13. ✅ All conflicts are non-violent and resolved safely
+14. ✅ All characters have safe, friendly, positive motivations
+15. ✅ Story ends with all characters happy, safe, and supported
+
+**Validation Outcome:**
+- If ALL 15 points PASS ✅ → Story is approved
+- If ANY point FAILS ❌ → Story is automatically regenerated with corrections
+- Process repeats until all validation points pass
+
+This triple-layer approach ensures that **no unsafe content can slip through** at any stage of story generation.
+
 ## Installation
 
 ### Prerequisites
