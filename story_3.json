@@ -1,0 +1,27 @@
+{
+    "context": {
+        "theme": "intelligence and perseverance",
+        "characters": [
+            {
+                "name": "Kalu",
+                "type": "crow",
+                "traits": [
+                    "smart",
+                    "observant",
+                    "determined"
+                ]
+            }
+        ],
+        "setting": "sunny village outskirts with a dry garden and an old clay pot",
+        "moral_lesson": "Intelligence and perseverance can solve even the hardest problems",
+        "age_group": "6-8",
+        "duration_minutes": 3
+    },
+    "preferences": {
+        "art_style": "cartoon",
+        "narration": true,
+        "music": true,
+        "music_mood": "light and thoughtful",
+        "color_palette": "warm earthy tones"
+    }
+}

@@ -107,46 +107,67 @@ class AudioTool:
         output_path: Path
     ) -> Optional[Path]:
         """
-        Generate narration using gTTS.
+        Generate narration using gTTS with retry logic.
         
         Args:
             text: Text to convert to speech
             output_path: Path to save audio file
             
         Returns:
-            Path to generated audio file, or None if failed
+            Path to generated audio file
+            
+        Raises:
+            Exception: If all 5 retry attempts fail
         """
-        try:
-            from gtts import gTTS
-            
-            logger.info("Generating narration with gTTS...")
-            tts = gTTS(text=text, lang=self.config.tts.language, slow=False)
-            tts.save(str(output_path))
-            
-            # Verify the file was created and has content
-            if output_path.exists() and output_path.stat().st_size > 0:
-                logger.info(f"Narration generated successfully: {output_path}")
-                return output_path
-            else:
-                logger.error("gTTS created an empty file")
-                return None
-            
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error generating gTTS narration: {error_msg}")
-            
-            # Provide helpful context for common errors
-            if "200" in error_msg or "OK" in error_msg:
-                logger.error("gTTS received HTTP 200 but failed to process audio. This may be due to:")
-                logger.error("  1. Network/firewall blocking Google TTS service")
-                logger.error("  2. Rate limiting from Google")
-                logger.error("  3. Corrupted gTTS installation")
-                logger.error("Solutions:")
-                logger.error("  - Try: pip install --upgrade gtts")
-                logger.error("  - Use ElevenLabs instead (set ELEVENLABS_API_KEY in .env)")
-                logger.error("  - Disable narration temporarily in preferences")
-            
-            return None
+        import time
+        from gtts import gTTS
+        
+        max_retries = 5
+        retry_delay = 5  # seconds
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"Generating narration with gTTS (attempt {attempt}/{max_retries})...")
+                tts = gTTS(text=text, lang=self.config.tts.language, slow=False)
+                tts.save(str(output_path))
+                
+                # Verify the file was created and has content
+                if output_path.exists() and output_path.stat().st_size > 0:
+                    logger.info(f"Narration generated successfully: {output_path}")
+                    return output_path
+                else:
+                    error_msg = "gTTS created an empty file"
+                    logger.error(error_msg)
+                    
+                    if attempt < max_retries:
+                        logger.info(f"Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        raise Exception(f"Failed after {max_retries} attempts: {error_msg}")
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Error generating gTTS narration (attempt {attempt}/{max_retries}): {error_msg}")
+                
+                # Provide helpful context for common errors
+                if "200" in error_msg or "OK" in error_msg:
+                    logger.error("gTTS received HTTP 200 but failed to process audio. This may be due to:")
+                    logger.error("  1. Network/firewall blocking Google TTS service")
+                    logger.error("  2. Rate limiting from Google")
+                    logger.error("  3. Corrupted gTTS installation")
+                    logger.error("Solutions:")
+                    logger.error("  - Try: pip install --upgrade gtts")
+                    logger.error("  - Use ElevenLabs instead (set ELEVENLABS_API_KEY in .env)")
+                    logger.error("  - Disable narration temporarily in preferences")
+                
+                # If this was the last attempt, raise the exception to stop the application
+                if attempt >= max_retries:
+                    logger.critical(f"gTTS narration failed after {max_retries} attempts. Stopping application.")
+                    raise Exception(f"Failed to generate gTTS narration after {max_retries} attempts: {error_msg}")
+                
+                # Otherwise, wait and retry
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
     
     def get_audio_duration(self, audio_path: Path) -> float:
         """
