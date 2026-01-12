@@ -83,102 +83,7 @@ class VideoAssemblyAgent:
             logger.error(f"Error generating segment narration: {e}")
             return None
     
-    def _split_story_into_segments(
-        self,
-        story: str,
-        num_segments: int
-    ) -> List[str]:
-        """
-        Split full story text into equal narrative chunks.
-        
-        This is a fallback method to ensure complete story coverage
-        when segment narrations are insufficient.
-        
-        Args:
-            story: Complete story text
-            num_segments: Number of segments to create
-            
-        Returns:
-            List of story chunks, one per segment
-        """
-        try:
-            # Split by sentences (handle ., !, ?)
-            import re
-            sentences = re.split(r'(?<=[.!?])\s+', story)
-            sentences = [s.strip() for s in sentences if s.strip()]
-            
-            if not sentences:
-                logger.warning("No sentences found in story")
-                return [story] * num_segments
-            
-            if len(sentences) < num_segments:
-                # If fewer sentences than segments, distribute evenly
-                logger.warning(f"Only {len(sentences)} sentences for {num_segments} segments")
-                chunks = []
-                for i in range(num_segments):
-                    idx = i * len(sentences) // num_segments
-                    chunks.append(sentences[idx] if idx < len(sentences) else "")
-                return chunks
-            
-            # Distribute sentences across segments
-            sentences_per_segment = len(sentences) // num_segments
-            remainder = len(sentences) % num_segments
-            
-            chunks = []
-            start_idx = 0
-            
-            for i in range(num_segments):
-                # Add extra sentence to first segments if remainder exists
-                chunk_size = sentences_per_segment + (1 if i < remainder else 0)
-                end_idx = start_idx + chunk_size
-                
-                chunk = ' '.join(sentences[start_idx:end_idx])
-                chunks.append(chunk)
-                start_idx = end_idx
-            
-            logger.info(f"Split story into {len(chunks)} chunks ({sentences_per_segment}-{sentences_per_segment+1} sentences each)")
-            return chunks
-            
-        except Exception as e:
-            logger.error(f"Error splitting story: {e}")
-            # Fallback: equal character-based split
-            chunk_size = len(story) // num_segments
-            return [story[i*chunk_size:(i+1)*chunk_size] for i in range(num_segments)]
-    
-    def _get_segment_narration_text(
-        self,
-        segment: Dict[str, Any],
-        story_chunk: str,
-        segment_index: int
-    ) -> str:
-        """
-        Get narration text for segment using hybrid approach.
-        
-        Prefers segment narration if substantial, otherwise uses story chunk.
-        
-        Args:
-            segment: Scene segment with optional narration
-            story_chunk: Corresponding chunk from full story split
-            segment_index: Index of the segment (0-based)
-            
-        Returns:
-            Narration text to use for TTS
-        """
-        segment_narration = segment.get("narration", "").strip()
-        
-        # If segment has substantial narration (at least 20 words), use it
-        if segment_narration and len(segment_narration.split()) >= 20:
-            logger.debug(f"Segment {segment_index + 1}: Using segment narration ({len(segment_narration.split())} words)")
-            return segment_narration
-        
-        # Otherwise, use story chunk as fallback
-        if segment_narration:
-            logger.info(f"Segment {segment_index + 1}: Segment narration too short ({len(segment_narration.split())} words), using story chunk")
-        else:
-            logger.info(f"Segment {segment_index + 1}: No segment narration, using story chunk")
-        
-        return story_chunk
-    
+
     def get_background_music(
         self,
         duration_seconds: float
@@ -250,19 +155,13 @@ class VideoAssemblyAgent:
             durations = []
             
             if preferences.get("narration", True):
-                logger.info("Generating per-segment narration with hybrid approach")
+                logger.info("Generating per-segment narration from segment narration attributes")
                 audio_output_dir = get_temp_path("", "audio")
-                
-                # Split full story into chunks as fallback
-                story_chunks = self._split_story_into_segments(story, len(script_segments))
                 
                 # Generate audio files for all segments using AudioTool
                 segment_audio_paths, durations = self.audio_tool.generate_segment_audio_files(
                     script_segments=script_segments,
-                    story=story,
-                    story_chunks=story_chunks,
-                    audio_output_dir=audio_output_dir,
-                    get_segment_narration_text_fn=self._get_segment_narration_text
+                    audio_output_dir=audio_output_dir
                 )
             else:
                 # No narration, use segment durations from script

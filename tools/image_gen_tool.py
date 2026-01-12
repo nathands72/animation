@@ -506,8 +506,8 @@ Focus on concrete visual details that will ensure consistency across multiple sc
         # Combine enhancements
         enhanced = f"{prompt}, {', '.join(enhancements)}, high quality, detailed"
         
-        # Ensure prompt is within DALL-E 3 limits (4000 characters)
-        if len(enhanced) > 4000: #TODO: summarize prompt using LLM
+        # Ensure prompt is within DALL-E 3 limits (4000 characters) - only for dalle3 provider
+        if self.provider == "dalle3" and len(enhanced) > 4000:
             print(f"Prompt length exceeded DALL-E 3 limits. Prompt has been truncated. Original length: {len(enhanced)}")
             enhanced = prompt[:3500] + ", " + ", ".join(enhancements[:3])
         

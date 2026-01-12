@@ -424,8 +424,8 @@ class VideoProcessingTool:
                 try:
                     logger.info("Adding end card with moral message")
                     
-                    # Create end card (3 seconds)
-                    end_card_duration = 3.0
+                    # Create end card (5 seconds)
+                    end_card_duration = 5.0
                     end_card = self.TextClip(
                         moral_message,
                         fontsize=50,

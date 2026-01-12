@@ -67,13 +67,55 @@ class AudioTool:
             logger.error(f"Error generating narration: {e}")
             return None
     
+    def _add_silence_padding(
+        self,
+        audio_path: Path,
+        padding_duration: float = 0.2
+    ) -> Optional[Path]:
+        """
+        Add silence padding at the beginning and end of an audio file.
+        
+        Used for gTTS since it doesn't support SSML timing controls.
+        
+        Args:
+            audio_path: Path to the audio file to add padding to
+            padding_duration: Duration of silence in seconds (default: 2.0)
+            
+        Returns:
+            Path to the padded audio file (same as input), or None if failed
+        """
+        try:
+            from pydub import AudioSegment
+            
+            # Load the audio file
+            audio = AudioSegment.from_file(str(audio_path))
+            
+            # Create silence segments (duration in milliseconds)
+            silence_ms = int(padding_duration * 1000)
+            silence = AudioSegment.silent(duration=silence_ms)
+            
+            # Add silence at beginning and end
+            padded_audio = silence + audio + silence
+            
+            # Export back to the same file
+            padded_audio.export(str(audio_path), format="mp3")
+            
+            logger.debug(f"Added {padding_duration}s silence padding to {audio_path.name}")
+            return audio_path
+            
+        except Exception as e:
+            logger.warning(f"Failed to add silence padding: {e}. Using original audio.")
+            return audio_path
+    
     def generate_elevenlabs_narration(
         self,
         text: str,
         output_path: Path
     ) -> Optional[Path]:
         """
-        Generate narration using ElevenLabs.
+        Generate narration using ElevenLabs with silence padding.
+        
+        Adds 0.2s pauses at the beginning and end during generation using SSML.
         
         Args:
             text: Text to convert to speech
@@ -87,14 +129,18 @@ class AudioTool:
             
             voice_id = self.config.tts.voice_id or "21m00Tcm4TlvDq8ikWAM"  # Default voice
             
+            # Add silence padding by using SSML break tags (200ms pause)
+            # ElevenLabs supports basic SSML for pauses
+            text_with_pauses = f'<break time="200ms"/>{text}<break time="200ms"/>'
+            
             audio = generate(
-                text=text,
+                text=text_with_pauses,
                 voice=voice_id,
                 model="eleven_monolingual_v1"
             )
             
             save(audio, str(output_path))
-            logger.info(f"Narration generated: {output_path}")
+            logger.info(f"Narration generated with silence padding: {output_path}")
             return output_path
             
         except Exception as e:
@@ -107,7 +153,9 @@ class AudioTool:
         output_path: Path
     ) -> Optional[Path]:
         """
-        Generate narration using gTTS with retry logic.
+        Generate narration using gTTS with retry logic and silence padding.
+        
+        Adds 0.2s pauses at the beginning and end via post-processing (gTTS doesn't support SSML).
         
         Args:
             text: Text to convert to speech
@@ -134,6 +182,10 @@ class AudioTool:
                 # Verify the file was created and has content
                 if output_path.exists() and output_path.stat().st_size > 0:
                     logger.info(f"Narration generated successfully: {output_path}")
+                    
+                    # Add silence padding via post-processing (gTTS doesn't support SSML)
+                    self._add_silence_padding(output_path, padding_duration=0.2)
+                    logger.info(f"Added 0.2s silence padding to {output_path.name}")
                     return output_path
                 else:
                     error_msg = "gTTS created an empty file"
@@ -194,23 +246,17 @@ class AudioTool:
     def generate_segment_audio_files(
         self,
         script_segments: List[Dict[str, Any]],
-        story: str,
-        story_chunks: List[str],
-        audio_output_dir: Path,
-        get_segment_narration_text_fn: callable
+        audio_output_dir: Path
     ) -> tuple[List[Optional[Path]], List[float]]:
         """
-        Generate audio files for video segments using hybrid narration approach.
+        Generate audio files for video segments from segment narration attributes.
         
-        This function generates narration audio for each segment, preferring segment-specific
-        narration when available, falling back to story chunks for complete coverage.
+        This function generates narration audio for each segment by reading the
+        'narration' attribute directly from each segment in script_segments.
         
         Args:
-            script_segments: List of scene segments with optional narration
-            story: Complete story text
-            story_chunks: Pre-split story chunks (one per segment)
+            script_segments: List of scene segments with narration attribute
             audio_output_dir: Directory to save audio files
-            get_segment_narration_text_fn: Function to get segment narration text
             
         Returns:
             Tuple of (segment_audio_paths, durations) where:
@@ -220,17 +266,13 @@ class AudioTool:
         segment_audio_paths = []
         durations = []
         
-        logger.info("Generating per-segment narration with hybrid approach")
+        logger.info("Generating per-segment narration from segment attributes")
         
-        for i, (segment, story_chunk) in enumerate(zip(script_segments, story_chunks)):
-            # Use hybrid approach: prefer segment narration, fallback to story chunk
-            narration_text = get_segment_narration_text_fn(
-                segment=segment,
-                story_chunk=story_chunk,
-                segment_index=i
-            )
+        for i, segment in enumerate(script_segments):
+            # Get narration text directly from segment
+            narration_text = segment.get("narration", "").strip()
             
-            if not narration_text.strip():
+            if not narration_text:
                 logger.warning(f"Segment {i + 1} has no narration text, using default duration")
                 segment_audio_paths.append(None)
                 durations.append(segment.get("duration_seconds", 5.0))

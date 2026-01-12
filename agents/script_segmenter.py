@@ -54,13 +54,45 @@ class ScriptSegmentationAgent:
         # System prompt for script segmentation
         self.system_prompt = """You are a script segmentation expert for animated video production.
 
+⚠️ MANDATORY FIRST STEP: COMPREHENSIVE STORY ANALYSIS ⚠️
+
+BEFORE creating any segments, you MUST complete this analysis:
+
+STEP 1: READ AND UNDERSTAND THE ENTIRE STORY
+- Read the complete story from first word to last word
+- Understand the plot, setting, and story arc
+- Identify the beginning, middle, and end
+- Note all key events and turning points
+
+STEP 2: IDENTIFY ALL IMPORTANT CHARACTERS
+- List EVERY character that appears in the story (by reading the story text)
+- Note when each character appears (beginning, middle, end)
+- Understand each character's role in the story
+- Cross-reference with the Context section to get additional details (type, traits) for characters listed there
+- IMPORTANT: Characters may appear in the story that are NOT in the Context section - include them too!
+- A character is any named individual (person, animal, creature) that performs actions or speaks in the story
+- STORYTELLER INFERENCE: If the story has narration but no explicit storyteller character is mentioned, infer a "Grandma" or "Dadi" (grandmother) character as the storyteller who is narrating the story to children. This creates a warm, traditional storytelling atmosphere.
+
+STEP 3: NOTE KEY STORY ELEMENTS
+- Important objects or props (e.g., golden feather, magic wand)
+- Significant locations (e.g., forest clearing, cave, village)
+- Key events and actions
+- Emotional beats and story progression
+
+STEP 4: PLAN YOUR SEGMENTATION
+- Decide where natural breaks occur in the story
+- Ensure each segment will have precise, story-accurate descriptions
+- Plan how characters will appear across segments based on the narration
+
+This analysis is CRITICAL for creating accurate, consistent segments.
+
 ⚠️ ABSOLUTE CRITICAL REQUIREMENT ⚠️
 YOU MUST INCLUDE 100% OF THE STORY TEXT IN THE SEGMENT NARRATIONS.
 DO NOT SKIP, SUMMARIZE, OR PARAPHRASE ANY PART OF THE STORY.
 EVERY SINGLE SENTENCE FROM THE STORY MUST APPEAR IN EXACTLY ONE SEGMENT'S NARRATION FIELD.
 
-Your role is to break a story into EXACTLY 8-12 visual scene segments where:
-1. YOU MUST CREATE BETWEEN 8 AND 12 SEGMENTS - NO MORE, NO LESS
+Your role is to break a story into EXACTLY 12-15 visual scene segments where:
+1. YOU MUST CREATE BETWEEN 12 AND 15 SEGMENTS - NO MORE, NO LESS
 2. THE ENTIRE STORY TEXT (EVERY WORD, EVERY SENTENCE) MUST BE DISTRIBUTED ACROSS SEGMENT NARRATIONS
 3. Each segment's narration should be a CONTINUOUS, VERBATIM portion of the original story
 4. Narration should flow naturally from one segment to the next with NO GAPS OR MISSING TEXT
@@ -69,13 +101,14 @@ Your role is to break a story into EXACTLY 8-12 visual scene segments where:
 7. Visual descriptions should match the narration content
 8. Each scene includes character emotions and expressions
 9. The total video duration matches the target (approximately 3-5 minutes)
+10. CRITICAL: Each segment description (except the first) MUST include visual context from the previous segment for continuity
 
 ⚠️ SEGMENT COUNT RESTRICTION ⚠️
-YOU MUST CREATE BETWEEN 8 AND 12 SEGMENTS ONLY.
-Creating 13 or more segments is UNACCEPTABLE and will be rejected.
-Creating fewer than 8 segments is also UNACCEPTABLE.
-If the story is long, make each segment's narration longer (more text per segment).
-DO NOT exceed 12 segments under any circumstances.
+YOU MUST CREATE BETWEEN 12 AND 15 SEGMENTS ONLY.
+Creating 16 or more segments is UNACCEPTABLE and will be rejected.
+Creating fewer than 12 segments is also UNACCEPTABLE.
+If the story is long, distribute the text across 12-15 segments evenly.
+DO NOT exceed 15 segments under any circumstances.
 
 CRITICAL STORY COVERAGE REQUIREMENTS (READ CAREFULLY):
 ❌ DO NOT summarize the story - copy the exact text
@@ -86,7 +119,7 @@ CRITICAL STORY COVERAGE REQUIREMENTS (READ CAREFULLY):
 ✅ DO start with the very first word of the story
 ✅ DO end with the very last word of the story
 ✅ DO verify that concatenating all narrations = complete original story
-✅ DO create EXACTLY 8-12 segments (never more than 12, never fewer than 8)
+✅ DO create EXACTLY 12-15 segments (never more than 15, never fewer than 12)
 
 VERIFICATION CHECKLIST BEFORE SUBMITTING:
 1. Did I include the first sentence of the story in segment 1's narration? ✓
@@ -94,8 +127,8 @@ VERIFICATION CHECKLIST BEFORE SUBMITTING:
 3. Are there any sentences from the story that I skipped? (Answer must be NO)
 4. Did I paraphrase or summarize any part? (Answer must be NO)
 5. If I concatenate all segment narrations, does it equal the full story? (Answer must be YES)
-6. Did I create between 8 and 12 segments? (Answer must be YES - count your segments!)
-7. Is my segment count 12 or fewer? (Answer must be YES - exceeding 12 is FORBIDDEN)
+6. Did I create between 12 and 15 segments? (Answer must be YES - count your segments!)
+7. Is my segment count 15 or fewer? (Answer must be YES - exceeding 15 is FORBIDDEN)
 
 REQUIRED FIELDS FOR EVERY SEGMENT (INCLUDING THE LAST ONE):
 You MUST provide ALL of the following fields for EVERY segment without exception:
@@ -124,14 +157,21 @@ DO NOT omit characters even if they only appear briefly or are just mentioned in
 The characters list should be comprehensive and include every character name that appears in the segment.
 
 IMPORTANT CHARACTER IDENTIFICATION RULES:
-- A character MUST be an individual named entity (person, animal, or creature) with a specific name
-- A character MUST have a defined type and traits (as provided in the Context section)
+- A character is any individual named entity (person, animal, or creature) that appears in the story
+- Characters can be from the Context section OR mentioned in the story itself
+- If a character is in Context, use their name, type, and traits from there
+- If a character appears in the story but NOT in Context, still include them (they are valid characters)
+- STORYTELLER: If the story has narration but no explicit storyteller, you may infer "Grandma" or "Dadi" as the storyteller character
 - DO NOT include generic plural groups (e.g., "little animals", "the birds", "villagers")
 - DO NOT include unnamed background entities or crowds
-- ONLY include characters that appear in the Context's character list with their name, type, and traits
+- DO include any named individual that performs actions or speaks in the story
 
-Examples of VALID characters: "Leo", "Mia", "Golden Eagle", "Wise Owl"
-Examples of INVALID characters: "little animals", "the birds", "some villagers", "creatures"
+Examples of VALID characters:
+- Characters from Context: "Kalu" (if in Context with type and traits)
+- Characters from story: "Farmer", "Old Woman", "Wise Owl" (even if not in Context, if they are named individuals in the story)
+- Inferred storyteller: "Grandma" or "Dadi" (if story has narration but no explicit storyteller)
+
+Examples of INVALID characters: "little animals", "the birds", "some villagers", "creatures" (generic groups, not named individuals)
 
 CRITICAL: The LAST segment is just as important as the first. Do NOT omit any fields in the final segment.
 
@@ -140,9 +180,93 @@ IMPORTANT FOR VISUAL CONSISTENCY:
 - If multiple scenes share the same location, use very similar background descriptions
 - Include details like: lighting quality (soft morning light, golden sunset, moonlit night), weather (clear sky, misty, rainy), atmosphere (peaceful, tense, magical), and environmental specifics (dense trees, rocky terrain, cozy interior)
 
-Ensure visual continuity between scenes (characters maintain consistent appearance)."""
+CRITICAL: PRECISE SEGMENT DESCRIPTIONS
 
-        self.human_prompt = """Break the following story into EXACTLY 8-12 visual scene segments (MINIMUM 8, MAXIMUM 12):
+Each segment's description field must be PRECISE and STORY-ACCURATE:
+
+✅ DO describe the EXACT actions and events from that segment's narration
+✅ DO include the SPECIFIC characters mentioned in that segment's narration
+✅ DO use details from the story (not generic descriptions)
+✅ DO reference specific objects, locations, and actions from the narration
+
+❌ DO NOT use generic descriptions like "Leo is in the forest"
+❌ DO NOT include characters not mentioned in that segment's narration
+❌ DO NOT make up details not in the story
+❌ DO NOT summarize - be specific about what happens
+
+Example of PRECISE vs IMPRECISE:
+❌ Imprecise: "Leo is in the forest"
+✅ Precise: "Leo the lion stands in a sunlit forest clearing, gazing at the tall oak trees around him"
+
+❌ Imprecise: "Leo finds something"
+✅ Precise: "Leo bends down and picks up a shimmering golden feather from the mossy ground, holding it up to examine it in the sunlight"
+
+CRITICAL: VISUAL CONTINUITY ACROSS SEGMENTS
+For segments 2-15, the description field MUST reference important visual elements from the previous 1-2 segments to ensure smooth image transitions:
+
+**IMPORTANT BALANCE:**
+- Previous context: 1-2 brief phrases referencing the last 1-2 segments
+- Current segment: PRIMARY FOCUS - precise description based on the actual story content
+- DO NOT let previous context overshadow the current segment's real content
+
+**What to briefly reference from previous 2 segments (1-2 phrases only):**
+- Character positions/locations from recent segments
+- Key objects carried over (e.g., "holding the golden feather...")
+- Environmental continuity (e.g., "deeper in the forest...")
+- Recent actions that connect to current segment
+
+**Format for segment descriptions:**
+- Segment 1: Detailed opening scene based on story
+- Segment 2: Brief reference to segment 1 + precise current segment description
+- Segments 3-15: Brief reference to relevant elements from segments (N-2) and/or (N-1) + precise current segment description
+
+**Examples with 2-segment context:**
+✅ Segment 1: "Leo the lion stands alone in a sunlit forest clearing, surrounded by tall oak trees with golden leaves"
+✅ Segment 2: "Still in the forest clearing, Leo bends down and discovers a shimmering golden feather lying on the mossy ground near his feet, its surface catching the sunlight and reflecting brilliant colors as he reaches toward it with his paw"
+✅ Segment 3: "Having picked up the feather from the ground, Leo now holds it up to examine it closely, turning it in his paws as the golden surface shimmers and reflects magical light"
+✅ Segment 4: "Still holding the shimmering feather, Leo looks around the clearing and spots a narrow forest path leading deeper into the woods, his curiosity drawing him toward it"
+
+**Examples of BAD continuity (DO NOT DO THIS):**
+❌ Segment 2: "Leo finds a feather" (Missing: where is Leo? No detail about current scene)
+❌ Segment 2: "Leo, who was standing in the forest clearing surrounded by oak trees with golden leaves and sunlight filtering through, finds a feather" (Too much previous context, not enough current detail)
+❌ Segment 3: "Leo is happy" (Missing: what about the feather? What is he doing? Where is he?)
+
+**KEY RULE: 80% precise current segment content from the story, 20% brief context from previous 1-2 segments**
+
+CRITICAL: CHARACTER CONSISTENCY BASED ON STORY ANALYSIS
+
+After completing your story analysis:
+
+1. **Character Identification**: You identified all characters in STEP 2 of your analysis (from the story itself)
+2. **Character Placement**: For each segment, include ONLY the characters that appear in that segment's narration
+3. **No Additions**: Do NOT add characters to a segment if they're not in that segment's narration
+4. **No Omissions**: Do NOT omit characters from a segment if they ARE in that segment's narration
+5. **Context vs Story**: Characters can come from Context section OR from the story itself - both are valid
+6. **Named Individuals Only**: Only include named individuals, not generic groups
+
+Example:
+- If narration says "Kalu the crow found water and showed the farmer" → characters: ["Kalu", "Farmer"] (even if "Farmer" is not in Context)
+- If narration says "Kalu flew alone through the sky" → characters: ["Kalu"]
+- If narration says "Kalu, the farmer, and the old woman gathered" → characters: ["Kalu", "Farmer", "Old Woman"]
+
+Ensure visual continuity between scenes (characters maintain consistent appearance and logical progression)."""
+
+        self.human_prompt = """Break the following story into EXACTLY 12-15 visual scene segments (MINIMUM 12, MAXIMUM 15):
+
+⚠️⚠️⚠️ MANDATORY FIRST STEP: ANALYZE THE STORY ⚠️⚠️⚠️
+
+BEFORE YOU CREATE ANY SEGMENTS, COMPLETE THIS ANALYSIS:
+
+1. READ the entire story below from beginning to end
+2. IDENTIFY all important characters that appear in the story
+3. UNDERSTAND when and where each character appears
+4. NOTE key events, objects, locations, and story progression
+5. VERIFY character names against the Context section
+6. PLAN your segmentation based on natural story breaks
+
+Only AFTER completing this analysis should you create segments.
+
+Your segments must have PRECISE descriptions that accurately reflect the story content.
 
 Story:
 {story}
@@ -171,8 +295,8 @@ WHAT YOU MUST DO:
 ✅ Start segment 1 with the very first sentence of the story
 ✅ End the final segment with the very last sentence of the story
 ✅ Include EVERY sentence between the first and last
-✅ Create EXACTLY 8-12 segments (NEVER exceed 12 segments - this is a hard limit)
-✅ If the story is long, distribute more text per segment to stay within the 8-12 limit
+✅ Create EXACTLY 12-15 segments (NEVER exceed 15 segments - this is a hard limit)
+✅ Distribute the story text evenly across 12-15 segments
 ✅ Split only at natural narrative breaks
 
 WHAT YOU MUST NOT DO:
@@ -182,13 +306,13 @@ WHAT YOU MUST NOT DO:
 ❌ DO NOT skip paragraphs because they seem less important
 ❌ DO NOT stop before reaching the end because you've hit a segment count
 ❌ DO NOT truncate the ending to fit a target duration
-❌ DO NOT create more than 12 segments - this is absolutely forbidden
-❌ DO NOT create fewer than 8 segments - this is also forbidden
+❌ DO NOT create more than 15 segments - this is absolutely forbidden
+❌ DO NOT create fewer than 12 segments - this is also forbidden
 
 REQUIRED FIELDS - ALL 9 FIELDS MUST BE PRESENT IN EVERY SEGMENT:
 Every segment MUST include all of these fields:
 - scene_number (integer)
-- description (string)
+- description (string) - CRITICAL: For segment 1, provide detailed opening scene based on story. For segments 2-15, start with 1-2 brief phrases referencing previous 1-2 segments, then provide PRECISE description of current segment's actual characters, actions, and events from the story (80% current, 20% previous)
 - characters (list of strings) - MUST include ALL characters mentioned in description, dialogue, OR narration
 - dialogue (string or null)
 - narration (string, VERBATIM from story, never empty, never summarized)
@@ -200,21 +324,23 @@ Every segment MUST include all of these fields:
 IMPORTANT - CHARACTER LISTING RULES:
 When populating the "characters" field, you MUST:
 1. Read the description, dialogue, and narration for that segment
-2. Extract ONLY individual named characters (with type and traits from Context)
-3. Cross-reference each name with the Context's character list to verify it's a defined character
-4. Include all valid character names in the characters array
-5. Do NOT include plural groups, unnamed entities, or generic references
-6. Do NOT omit valid characters even if they're only mentioned briefly
+2. Extract ONLY individual named characters (people, animals, creatures with names)
+3. Characters can come from Context section OR from the story itself
+4. If a character is in Context, they have type and traits defined
+5. If a character appears in the story but not in Context, they are still valid (include them!)
+6. Include all valid character names in the characters array
+7. Do NOT include plural groups, unnamed entities, or generic references
+8. Do NOT omit valid characters even if they're only mentioned briefly
 
 Examples of correct character listing:
-- Narration: "Leo showed the feather to Mia" → characters: ["Leo", "Mia"]
-- Dialogue: "'Hello!' said Sam to Leo and Mia" → characters: ["Sam", "Leo", "Mia"]  
-- Description: "Leo, Mia, and the Golden Eagle meet" → characters: ["Leo", "Mia", "Golden Eagle"]
-- Narration: "Leo thought about what Mia had said" → characters: ["Leo", "Mia"]
+- Narration: "Kalu the crow showed the farmer the water" → characters: ["Kalu", "Farmer"] (both valid, even if "Farmer" not in Context)
+- Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman", "Kalu"]  
+- Description: "Kalu, the farmer, and the village elder meet" → characters: ["Kalu", "Farmer", "Village Elder"]
+- Narration: "Kalu thought about what the farmer had said" → characters: ["Kalu", "Farmer"]
 
 Examples of INCORRECT character listing (DO NOT DO THIS):
-- Narration: "Leo showed the feather to Mia" → characters: ["Leo"] ❌ (Missing Mia!)
-- Dialogue: "'Hello!' said Sam to Leo" → characters: ["Sam"] ❌ (Missing Leo!)
+- Narration: "Kalu showed the farmer the water" → characters: ["Kalu"] ❌ (Missing Farmer!)
+- Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman"] ❌ (Missing Kalu!)
 
 Examples of CORRECT vs INCORRECT character identification:
 ✅ CORRECT: Narration mentions "Leo and Mia saw some little animals" → characters: ["Leo", "Mia"]
@@ -229,8 +355,8 @@ Examples of CORRECT vs INCORRECT character identification:
 Example of a COMPLETE segment with ALL required fields:
 {{
   "scene_number": 1,
-  "description": "Leo discovers a golden feather in the magical forest",
-  "characters": ["Leo", "Mia"],
+  "description": "Leo the lion stands alone in a sunlit forest clearing, surrounded by tall oak trees with golden leaves",
+  "characters": ["Leo"],
   "dialogue": null,
   "narration": "Once upon a time, in a magical forest, lived Leo the lion. One day, he found a beautiful golden feather.",
   "duration_seconds": 6.0,
@@ -239,19 +365,38 @@ Example of a COMPLETE segment with ALL required fields:
   "emotions": ["curiosity", "wonder"]
 }}
 
+Example of segment 2 with PROPER VISUAL CONTINUITY (brief context + detailed current scene):
+{{
+  "scene_number": 2,
+  "description": "Still in the forest clearing, Leo bends down and discovers a shimmering golden feather lying on the mossy ground near his feet, its surface catching the sunlight and reflecting brilliant colors as he reaches toward it with his paw",
+  "characters": ["Leo"],
+  "dialogue": null,
+  "narration": "The feather sparkled in the sunlight, catching Leo's attention. He had never seen anything so beautiful.",
+  "duration_seconds": 5.0,
+  "setting": "Magical forest",
+  "scene_background": "The same vibrant magical forest clearing with towering ancient trees. Soft golden sunlight continues to filter through the dense canopy, illuminating the golden feather on the mossy forest floor. The atmosphere remains peaceful and enchanting.",
+  "emotions": ["curiosity", "excitement", "wonder"]
+}}
+
 SELF-CHECK BEFORE SUBMITTING YOUR RESPONSE:
+□ Did I read and understand the ENTIRE story before creating segments?
+□ Did I identify ALL important characters from the story?
 □ Does segment 1's narration start with the first sentence of the story?
 □ Does the final segment's narration end with the last sentence of the story?
 □ Did I include every sentence from the story without skipping any?
 □ Did I copy the text exactly without paraphrasing or summarizing?
 □ Does every segment have all 9 required fields?
 □ If I concatenate all narrations, do I get the complete original story?
-□ Did I create between 8 and 12 segments? (COUNT THEM: 1, 2, 3... must be ≥8 and ≤12)
-□ Is my total segment count 12 or less? (If you have 13+ segments, you FAILED)
+□ Did I create between 12 and 15 segments? (COUNT THEM: 1, 2, 3... must be ≥12 and ≤15)
+□ Is my total segment count 15 or less? (If you have 16+ segments, you FAILED)
+□ Are my segment descriptions PRECISE and based on actual story content (not generic)?
+□ Do the characters in each segment match EXACTLY the characters in that segment's narration?
+□ CRITICAL: Does each segment description (3-15) reference relevant elements from the previous 2 segments? (Answer must be YES)
+□ Did I avoid generic descriptions and use specific story details?
 
 If you cannot answer YES to all of the above, DO NOT SUBMIT. Go back and fix it.
 
-CRITICAL REMINDER: The LAST segment (segment 8-12) MUST have ALL 9 fields just like the first segment. Do not omit duration_seconds, setting, scene_background, or emotions from the final segment.
+CRITICAL REMINDER: The LAST segment (segment 15-20) MUST have ALL 9 fields just like the first segment. Do not omit duration_seconds, setting, scene_background, or emotions from the final segment.
 
 Now segment the story above following these requirements."""
 
