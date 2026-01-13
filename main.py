@@ -270,6 +270,7 @@ def main():
         logger.info("No input file provided, using example input")
         input_data = {
             "context": {
+                "topic": "two friends learning about honesty in a magical forest",
                 "theme": "honesty",
                 "characters": [
                     {"name": "Leo", "type": "animal", "traits": ["brave", "curious"]},

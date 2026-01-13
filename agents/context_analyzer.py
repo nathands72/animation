@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class ValidatedContext(BaseModel):
     """Validated context structure."""
     
+    topic: str = Field(description="Story topic or main subject")
     theme: str = Field(description="Story theme")
     characters: List[Dict[str, Any]] = Field(description="List of characters with names, types, and traits")
     setting: str = Field(description="Story setting")
@@ -48,8 +49,9 @@ class ContextAnalyzerAgent:
 
 Your role is to:
 1. Parse and validate input context for story generation
-2. Extract key elements: theme, characters, setting, moral lesson, age group
+2. Extract key elements: topic, theme, characters, setting, moral lesson, age group
 3. Generate search queries for knowledge enrichment about:
+   - The story topic and related concepts
    - The moral theme and its importance
    - Age-appropriate storytelling techniques
    - Cultural references if relevant
@@ -111,6 +113,7 @@ Provide validated context with search queries for knowledge enrichment."""
             
             # Convert to dictionary
             result = {
+                "topic": validated_context.topic,
                 "theme": validated_context.theme,
                 "characters": validated_context.characters,
                 "setting": validated_context.setting,
@@ -129,6 +132,7 @@ Provide validated context with search queries for knowledge enrichment."""
             # Fallback: return basic validated context without LLM
             logger.warning("Falling back to basic validation")
             return {
+                "topic": context.get("topic", ""),
                 "theme": context.get("theme", ""),
                 "characters": context.get("characters", []),
                 "setting": context.get("setting", ""),
@@ -149,6 +153,10 @@ Provide validated context with search queries for knowledge enrichment."""
             List of search queries
         """
         queries = []
+        
+        topic = context.get("topic", "")
+        if topic:
+            queries.append(f"children's stories about {topic}")
         
         theme = context.get("theme", "")
         if theme:

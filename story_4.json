@@ -1,0 +1,41 @@
+{
+    "context": {
+        "topic": "Birds and mouse working together",
+        "theme": "teamwork",
+        "characters": [
+            {
+                "name": "Sparrow",
+                "type": "bird",
+                "traits": [
+                    "clever",
+                    "cooperative"
+                ]
+            },
+            {
+                "name": "Dove",
+                "type": "bird",
+                "traits": [
+                    "gentle",
+                    "helpful"
+                ]
+            },
+            {
+                "name": "Moti",
+                "type": "mouse",
+                "traits": [
+                    "brave",
+                    "resourceful"
+                ]
+            }
+        ],
+        "setting": "peaceful forest near a village with a sparkling pond",
+        "moral_lesson": "Working together helps everyone solve problems and succeed.",
+        "age_group": "6-8",
+        "duration_minutes": 4
+    },
+    "preferences": {
+        "art_style": "traditional Indian cartoon",
+        "narration": true,
+        "music": true
+    }
+}

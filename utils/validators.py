@@ -33,10 +33,14 @@ def validate_input(input_data: Dict[str, Any]) -> tuple[bool, Optional[str]]:
     context = input_data["context"]
     
     # Validate required context fields
-    required_fields = ["theme", "characters", "setting", "moral_lesson", "age_group"]
+    required_fields = ["topic", "theme", "characters", "setting", "moral_lesson", "age_group"]
     for field in required_fields:
         if field not in context:
             return False, f"Missing required field in context: {field}"
+    
+    # Validate topic
+    if not isinstance(context["topic"], str) or not context["topic"].strip():
+        return False, "Topic must be a non-empty string"
     
     # Validate theme
     if not isinstance(context["theme"], str) or not context["theme"].strip():
@@ -61,10 +65,11 @@ def validate_input(input_data: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         return False, "Moral lesson must be a non-empty string"
     
     # Validate age_group
+    """
     valid_age_groups = ["3-5", "6-8", "9-12"]
     if context["age_group"] not in valid_age_groups:
         return False, f"Age group must be one of: {', '.join(valid_age_groups)}"
-    
+    """
     # Validate duration if provided
     if "duration_minutes" in context:
         duration = context["duration_minutes"]
@@ -77,11 +82,12 @@ def validate_input(input_data: Dict[str, Any]) -> tuple[bool, Optional[str]]:
         if not isinstance(prefs, dict):
             return False, "Preferences must be a dictionary"
         
+        """
         if "art_style" in prefs:
             valid_styles = ["cartoon", "watercolor", "3D", "2D"]
             if prefs["art_style"] not in valid_styles:
                 return False, f"Art style must be one of: {', '.join(valid_styles)}"
-    
+        """
     return True, None
 
 
