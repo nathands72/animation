@@ -15,11 +15,15 @@ logger = logging.getLogger(__name__)
 class VideoAssemblyAgent:
     """Agent for assembling final video with narration and music."""
     
-    def __init__(self):
-        """Initialize video assembly agent."""
+    def __init__(self, workflow_id: Optional[str] = None):
+        """Initialize video assembly agent.
+        
+        Args:
+            workflow_id: Optional workflow ID to organize generated files by workflow execution
+        """
         self.config = get_config()
-        self.video_tool = VideoProcessingTool()
-        self.audio_tool = AudioTool()
+        self.video_tool = VideoProcessingTool(workflow_id=workflow_id)
+        self.audio_tool = AudioTool(workflow_id=workflow_id)
     
 
     

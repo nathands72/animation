@@ -73,13 +73,14 @@ def get_output_path(filename: str, subdirectory: Optional[str] = None) -> Path:
     return output_dir / filename
 
 
-def get_temp_path(filename: str, subdirectory: Optional[str] = None) -> Path:
+def get_temp_path(filename: str, subdirectory: Optional[str] = None, workflow_id: Optional[str] = None) -> Path:
     """
     Get temporary path for a file.
     
     Args:
         filename: Name of the file
-        subdirectory: Optional subdirectory within temp directory
+        subdirectory: Optional subdirectory within temp directory (e.g., "images", "audio", "video")
+        workflow_id: Optional workflow ID to organize files by workflow execution
         
     Returns:
         Path object for the temp file
@@ -89,6 +90,9 @@ def get_temp_path(filename: str, subdirectory: Optional[str] = None) -> Path:
     
     if subdirectory:
         temp_dir = temp_dir / subdirectory
+        # If workflow_id is provided, create a subdirectory for this workflow
+        if workflow_id:
+            temp_dir = temp_dir / workflow_id
         temp_dir.mkdir(parents=True, exist_ok=True)
     
     return temp_dir / filename

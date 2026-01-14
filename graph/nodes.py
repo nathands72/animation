@@ -384,7 +384,10 @@ def character_designer_node(state: MoralVideoState) -> Dict[str, Any]:
         Updated state dictionary
     """
     config = get_config()
-    agent = CharacterDesignAgent()
+    
+    # Get workflow_id from state to pass to agent
+    workflow_id = state.get("workflow_id")
+    agent = CharacterDesignAgent(workflow_id=workflow_id)
     
     try:
         logger.info("Executing character designer node")
@@ -558,7 +561,10 @@ def video_assembler_node(state: MoralVideoState) -> Dict[str, Any]:
         Updated state dictionary
     """
     config = get_config()
-    agent = VideoAssemblyAgent()
+    
+    # Get workflow_id from state to pass to agent
+    workflow_id = state.get("workflow_id")
+    agent = VideoAssemblyAgent(workflow_id=workflow_id)
     
     try:
         logger.info("Executing video assembler node")

@@ -13,10 +13,15 @@ logger = logging.getLogger(__name__)
 class AudioTool:
     """Tool for generating and processing audio files."""
     
-    def __init__(self):
-        """Initialize audio tool."""
+    def __init__(self, workflow_id: Optional[str] = None):
+        """Initialize audio tool.
+        
+        Args:
+            workflow_id: Optional workflow ID to organize generated audio by workflow execution
+        """
         self.config = get_config()
         self.elevenlabs_available = False
+        self.workflow_id = workflow_id
         self._initialize_tts()
     
     def _initialize_tts(self):
@@ -56,7 +61,7 @@ class AudioTool:
             logger.info("Generating narration audio")
             
             if output_path is None:
-                output_path = get_temp_path("narration.mp3", "audio")
+                output_path = get_temp_path("narration.mp3", "audio", self.workflow_id)
             
             if self.elevenlabs_available and self.config.tts.provider == "elevenlabs":
                 return self.generate_elevenlabs_narration(story, output_path)

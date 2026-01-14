@@ -49,9 +49,14 @@ except Exception as e:
 class VideoProcessingTool:
     """Video processing tool with MoviePy."""
     
-    def __init__(self):
-        """Initialize video processing tool."""
+    def __init__(self, workflow_id: Optional[str] = None):
+        """Initialize video processing tool.
+        
+        Args:
+            workflow_id: Optional workflow ID to organize generated videos by workflow execution
+        """
         self.config = get_config()
+        self.workflow_id = workflow_id
         try:
             from moviepy.editor import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, concatenate_audioclips, AudioFileClip, TextClip
             from moviepy.video.fx.fadein import fadein
@@ -166,7 +171,7 @@ class VideoProcessingTool:
             
             # Determine output path
             if output_path is None:
-                output_path = get_temp_path("video_segment.mp4", "video")
+                output_path = get_temp_path("video_segment.mp4", "video", self.workflow_id)
             
             # Write video
             logger.info(f"Writing video to: {output_path}")
@@ -247,7 +252,7 @@ class VideoProcessingTool:
             
             # Determine output path
             if output_path is None:
-                output_path = get_temp_path("video_with_audio.mp4")
+                output_path = get_temp_path("video_with_audio.mp4", "video", self.workflow_id)
             
             # Write video
             final_video.write_videofile(
@@ -329,7 +334,7 @@ class VideoProcessingTool:
             
             # Determine output path
             if output_path is None:
-                output_path = get_temp_path("video_with_text.mp4")
+                output_path = get_temp_path("video_with_text.mp4", "video", self.workflow_id)
             
             # Write video
             final_video.write_videofile(

@@ -20,11 +20,16 @@ logger = logging.getLogger(__name__)
 class ImageGenerationTool:
     """Image generation tool with multi-provider support."""
     
-    def __init__(self):
-        """Initialize image generation tool."""
+    def __init__(self, workflow_id: Optional[str] = None):
+        """Initialize image generation tool.
+        
+        Args:
+            workflow_id: Optional workflow ID to organize generated images by workflow execution
+        """
         self.config = get_config()
         self.client = None
         self.provider = self.config.image_gen.provider
+        self.workflow_id = workflow_id
         self._initialize_client()
         
         # Initialize LLM for prompt summarization
@@ -153,7 +158,7 @@ class ImageGenerationTool:
             filename = f"scene_{scene_number}.png" if scene_number else "image.png"
             if character_name:
                 filename = f"{character_name}_{filename}"
-            output_path = get_temp_path(filename, "images")
+            output_path = get_temp_path(filename, "images", self.workflow_id)
         
         # Route to provider-specific generation
         try:
@@ -630,7 +635,7 @@ Provide a concise version that maintains character consistency for image generat
             f"consistent design, character sheet style"
         )
         
-        output_path = get_temp_path(f"character_ref_{character_name}.png", "images")
+        output_path = get_temp_path(f"character_ref_{character_name}.png", "images", self.workflow_id)
         
         return self.generate_image(
             prompt=prompt,
@@ -712,7 +717,7 @@ Provide a concise version that maintains character consistency for image generat
             f"animated scene, clear composition, \n\n",
             f"characters visible and expressive"])
         
-        output_path = get_temp_path(f"scene_{scene_number:03d}.png", "images")
+        output_path = get_temp_path(f"scene_{scene_number:03d}.png", "images", self.workflow_id)
         
         # Pass character reference images to generate_image
         return self.generate_image(

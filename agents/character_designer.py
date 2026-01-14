@@ -17,8 +17,12 @@ logger = logging.getLogger(__name__)
 class CharacterDesignAgent:
     """Agent for generating consistent character visuals."""
     
-    def __init__(self):
-        """Initialize character design agent."""
+    def __init__(self, workflow_id: Optional[str] = None):
+        """Initialize character design agent.
+        
+        Args:
+            workflow_id: Optional workflow ID to organize generated images by workflow execution
+        """
         self.config = get_config()
         self.llm = ChatOpenAI(
             model_name=self.config.character_designer_llm.model,
@@ -27,7 +31,7 @@ class CharacterDesignAgent:
             api_key=self.config.character_designer_llm.api_key,
             base_url=self.config.character_designer_llm.base_url
         )
-        self.image_tool = ImageGenerationTool()
+        self.image_tool = ImageGenerationTool(workflow_id=workflow_id)
         
         # System prompt for character design
         self.system_prompt = """You are a character design expert for animated children's videos.
