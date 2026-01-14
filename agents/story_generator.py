@@ -339,7 +339,19 @@ Write the story now in simple English with grandma's loving voice (600-900 words
         # Add topic (required field)
         parts.append(f"Topic: {context.get('topic', 'N/A')}")
         parts.append(f"Theme: {context.get('theme', 'N/A')}")
+        
+        # Add story tale if available
+        story_tale = context.get('story_tale')
+        if story_tale:
+            parts.append(f"Story Tale: {story_tale}")
+        
         parts.append(f"Setting: {context.get('setting', 'N/A')}")
+        
+        # Add plot if available
+        plot = context.get('plot')
+        if plot:
+            parts.append(f"Plot: {plot}")
+        
         parts.append(f"Moral Lesson: {context.get('moral_lesson', 'N/A')}")
         parts.append(f"Age Group: {context.get('age_group', '6-8')}")
         parts.append(f"Target Duration: {context.get('duration_minutes', 3)} minutes")

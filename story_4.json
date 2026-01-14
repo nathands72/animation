@@ -2,6 +2,7 @@
     "context": {
         "topic": "Birds and mouse working together",
         "theme": "teamwork",
+        "story_tale": "Panchatantra",
         "characters": [
             {
                 "name": "Sparrow",
@@ -29,6 +30,7 @@
             }
         ],
         "setting": "peaceful forest near a village with a sparkling pond",
+        "plot": "A group of birds get trapped in a hunter's net near the pond. Moti the mouse hears their cries for help and bravely comes to their rescue. Using his small size and sharp teeth, he gnaws through the net ropes while the birds guide him. Together, they work as a team - the birds using their wings to lift parts of the net and Moti using his quick paws to untangle the knots. They successfully free all the birds, and everyone celebrates their friendship and teamwork.",
         "moral_lesson": "Working together helps everyone solve problems and succeed.",
         "age_group": "6-8",
         "duration_minutes": 4

@@ -160,7 +160,7 @@ class VideoAssemblyAgent:
             
             if preferences.get("narration", True):
                 logger.info("Generating per-segment narration from segment narration attributes")
-                audio_output_dir = get_temp_path("", "audio")
+                audio_output_dir = get_temp_path("", "audio", self.video_tool.workflow_id)
                 
                 # Generate audio files for all segments using AudioTool
                 segment_audio_paths, durations = self.audio_tool.generate_segment_audio_files(

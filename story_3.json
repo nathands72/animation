@@ -2,6 +2,7 @@
     "context": {
         "topic": "a clever crow who finds water in a pot",
         "theme": "intelligence and perseverance",
+        "story_tale": "Aesop's Fables",
         "characters": [
             {
                 "name": "Kalu",
@@ -14,6 +15,7 @@
             }
         ],
         "setting": "sunny village outskirts with a dry garden and an old clay pot",
+        "plot": "Kalu the crow is very thirsty on a hot day and finds an old clay pot with water at the bottom, but his beak cannot reach it. He thinks carefully and observes small pebbles nearby. Using his intelligence, he drops pebbles into the pot one by one, slowly raising the water level. After many patient attempts, the water rises enough for him to drink. Kalu's clever thinking and determination save the day.",
         "moral_lesson": "Intelligence and perseverance can solve even the hardest problems",
         "age_group": "6-8",
         "duration_minutes": 3

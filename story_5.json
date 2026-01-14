@@ -1,0 +1,43 @@
+{
+    "context": {
+        "topic": "Birds and mouse working together",
+        "theme": "teamwork",
+        "story_tale": "Panchatantra",
+        "characters": [
+            {
+                "name": "Sparrow",
+                "type": "bird",
+                "traits": [
+                    "clever",
+                    "cooperative"
+                ]
+            },
+            {
+                "name": "Dove",
+                "type": "bird",
+                "traits": [
+                    "gentle",
+                    "helpful"
+                ]
+            },
+            {
+                "name": "Mina",
+                "type": "mouse",
+                "traits": [
+                    "brave",
+                    "resourceful"
+                ]
+            }
+        ],
+        "setting": "peaceful forest near a village with a large banyan tree",
+        "plot": "A flock of birds resting in a banyan tree becomes tangled in a hunter's net. Mina the little mouse hears their cries and hurries over; while the birds flutter and distract the hunter, Mina uses her sharp teeth to gnaw a hole in the net. Together they free themselves and return safely to the tree, promising to help one another in the future.",
+        "moral_lesson": "Working together and helping each other can solve problems no one can fix alone.",
+        "age_group": "6-8",
+        "duration_minutes": 4
+    },
+    "preferences": {
+        "art_style": "traditional Indian cartoon",
+        "narration": true,
+        "music": true
+    }
+}

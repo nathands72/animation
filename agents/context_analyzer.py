@@ -21,8 +21,10 @@ class ValidatedContext(BaseModel):
     
     topic: str = Field(description="Story topic or main subject")
     theme: str = Field(description="Story theme")
+    story_tale: Optional[str] = Field(default=None, description="Optional source tale or story collection (e.g., Panchatantra, Aesop's Fables)")
     characters: List[Dict[str, Any]] = Field(description="List of characters with names, types, and traits")
     setting: str = Field(description="Story setting")
+    plot: Optional[str] = Field(default=None, description="Optional plot outline or storyline for the story")
     moral_lesson: str = Field(description="Moral lesson to convey")
     age_group: str = Field(description="Target age group")
     duration_minutes: int = Field(description="Target video duration in minutes", default=3)
@@ -123,6 +125,12 @@ Provide validated context with search queries for knowledge enrichment."""
                 "search_queries": validated_context.search_queries,
             }
             
+            # Add optional fields if available
+            if validated_context.story_tale:
+                result["story_tale"] = validated_context.story_tale
+            if validated_context.plot:
+                result["plot"] = validated_context.plot
+            
             logger.info(f"Context analyzed successfully. Generated {len(result['search_queries'])} search queries")
             
             return result
@@ -131,7 +139,7 @@ Provide validated context with search queries for knowledge enrichment."""
             logger.error(f"Error analyzing context: {e}")
             # Fallback: return basic validated context without LLM
             logger.warning("Falling back to basic validation")
-            return {
+            fallback_result = {
                 "topic": context.get("topic", ""),
                 "theme": context.get("theme", ""),
                 "characters": context.get("characters", []),
@@ -141,6 +149,14 @@ Provide validated context with search queries for knowledge enrichment."""
                 "duration_minutes": context.get("duration_minutes", 3),
                 "search_queries": self._generate_fallback_queries(context),
             }
+            
+            # Add optional fields if available
+            if context.get("story_tale"):
+                fallback_result["story_tale"] = context.get("story_tale")
+            if context.get("plot"):
+                fallback_result["plot"] = context.get("plot")
+            
+            return fallback_result
     
     def _generate_fallback_queries(self, context: Dict[str, Any]) -> List[str]:
         """

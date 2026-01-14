@@ -1,6 +1,7 @@
 {
   "context": {
     "theme": "honesty",
+    "story_tale": "Aesop's Fables",
     "characters": [
       {
         "name": "Leo",
@@ -20,6 +21,7 @@
       }
     ],
     "setting": "magical forest",
+    "plot": "Leo the lion finds a shiny golden coin in the forest and is tempted to keep it. Mia the wise owl sees him and gently reminds him about honesty. Leo struggles with his decision but eventually chooses to find the rightful owner. Together, they discover the coin belongs to a kind rabbit family who lost it. The family is grateful, and Leo learns that being honest makes him feel proud and happy inside.",
     "moral_lesson": "Honesty is the best policy, even when it's hard",
     "age_group": "6-8",
     "duration_minutes": 3

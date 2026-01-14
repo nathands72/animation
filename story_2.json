@@ -1,6 +1,7 @@
 {
     "context": {
         "theme": "bravery",
+        "story_tale": "Original",
         "characters": [
             {
                 "name": "Aru",
@@ -31,6 +32,7 @@
             }
         ],
         "setting": "lush riverside jungle near a small village",
+        "plot": "Aru the young deer is afraid to cross the rushing river to reach the sweet mangoes on the other side. His friends Kavi the monkey and Tara the elephant notice his fear and encourage him. Tara offers to help by creating a safe path with her strong body, while Kavi cheers Aru on. With their support and his own courage, Aru takes small brave steps and successfully crosses the river. He realizes that being brave doesn't mean having no fear, but doing the right thing even when scared.",
         "moral_lesson": "Bravery is not the absence of fear, but the courage to do the right thing despite fear",
         "age_group": "6-8",
         "duration_minutes": 4
