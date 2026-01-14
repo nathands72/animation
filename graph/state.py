@@ -103,7 +103,10 @@ def create_initial_state(
     import uuid
     
     if workflow_id is None:
-        workflow_id = str(uuid.uuid4())
+        # Generate timestamp-based workflow ID for better readability and sorting
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        short_uuid = str(uuid.uuid4())[:8]
+        workflow_id = f"{timestamp}_{short_uuid}"
     
     return MoralVideoState(
         input_context=input_context,
