@@ -1,0 +1,45 @@
+{
+    "context": {
+        "topic": "A child's first Pongal celebration on the family farm",
+        "theme": "gratitude and tradition",
+        "characters": [
+            {
+                "name": "Maya",
+                "type": "girl",
+                "traits": [
+                    "curious",
+                    "cheerful",
+                    "helpful"
+                ]
+            },
+            {
+                "name": "Amma",
+                "type": "grandmother",
+                "traits": [
+                    "wise",
+                    "kind",
+                    "patient"
+                ]
+            },
+            {
+                "name": "Bommi",
+                "type": "cow",
+                "traits": [
+                    "gentle",
+                    "friendly",
+                    "valued"
+                ]
+            }
+        ],
+        "setting": "Sunny village farmhouse with decorated courtyard, sugarcane fields, clay pots, and friendly cows",
+        "plot": "Maya, excited for her first Pongal, helps her grandmother clean the courtyard and decorate the family cow Bommi with flowers. The family cooks sweet Pongal in a clay pot, singing and offering thanks to the sun and the harvest. Neighbors arrive to share food and stories as the pot boils over in a joyful tradition. Maya learns the meaning of gratitude, family togetherness, and caring for nature while sharing the feast.",
+        "moral_lesson": "Pongal teaches us to be thankful for nature's gifts, honor family traditions, and share with kindness.",
+        "age_group": "6-8",
+        "duration_minutes": 4
+    },
+    "preferences": {
+        "art_style": "bright folk-cartoon",
+        "narration": true,
+        "music": true
+    }
+}

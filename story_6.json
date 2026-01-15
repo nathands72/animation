@@ -1,0 +1,42 @@
+{
+    "context": {
+        "topic": "Birds and mouse working together to escape a hunter's net",
+        "theme": "teamwork",
+        "story_tale": "Panchatantra",
+        "characters": [
+            {
+                "name": "King of Doves",
+                "type": "dove",
+                "traits": [
+                    "wise",
+                    "leader"
+                ]
+            },
+            {
+                "name": "Hiranyaka",
+                "type": "mouse",
+                "traits": [
+                    "loyal",
+                    "helpful"
+                ]
+            },
+            {
+                "name": "The Hunter",
+                "type": "human",
+                "traits": [
+                    "cunning"
+                ]
+            }
+        ],
+        "setting": "peaceful forest near a village with trees and a clear stream",
+        "plot": "A flock of doves led by their wise king is searching for food when they get trapped in a hunter's net. The King of Doves stays calm and asks all the birds to flap and lift the net together while one small mouse is fetched for help. Hiranyaka the mouse quickly nibbles through the ropes from below and frees the trapped birds. The birds and the mouse celebrate, showing how everyone’s small help can solve big problems.",
+        "moral_lesson": "Working together and using each one's strengths can overcome any challenge.",
+        "age_group": "6-8",
+        "duration_minutes": 4
+    },
+    "preferences": {
+        "art_style": "traditional Indian cartoon",
+        "narration": true,
+        "music": true
+    }
+}

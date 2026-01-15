@@ -156,22 +156,37 @@ Example: If only the description mentions "Leo alone in the forest", then charac
 DO NOT omit characters even if they only appear briefly or are just mentioned in passing.
 The characters list should be comprehensive and include every character name that appears in the segment.
 
-IMPORTANT CHARACTER IDENTIFICATION RULES:
-- A character is any individual named entity (person, animal, or creature) that appears in the story
-- Characters can be from the Context section OR mentioned in the story itself
-- If a character is in Context, use their name, type, and traits from there
-- If a character appears in the story but NOT in Context, still include them (they are valid characters)
-- STORYTELLER: If the story has narration but no explicit storyteller, you may infer "Grandma" or "Dadi" as the storyteller character
-- DO NOT include generic plural groups (e.g., "little animals", "the birds", "villagers")
-- DO NOT include unnamed background entities or crowds
-- DO include any named individual that performs actions or speaks in the story
+⚠️ CRITICAL CHARACTER IDENTIFICATION RULES ⚠️
 
-Examples of VALID characters:
-- Characters from Context: "Kalu" (if in Context with type and traits)
-- Characters from story: "Farmer", "Old Woman", "Wise Owl" (even if not in Context, if they are named individuals in the story)
+A character MUST be a NAMED INDIVIDUAL (a specific person, animal, or creature with a name or title).
+
+✅ INCLUDE these as characters:
+- Named individuals from Context section (e.g., "Kalu", "Leo", "Mia")
+- Named individuals from the story itself (e.g., "Farmer", "Old Woman", "Wise Owl", "Village Elder")
+- Characters with titles that identify them as individuals (e.g., "The King", "The Merchant")
 - Inferred storyteller: "Grandma" or "Dadi" (if story has narration but no explicit storyteller)
 
-Examples of INVALID characters: "little animals", "the birds", "some villagers", "creatures" (generic groups, not named individuals)
+❌ NEVER INCLUDE these as characters (these are PLURAL GROUPS or GENERIC REFERENCES):
+- Plural groups: "little animals", "the birds", "villagers", "children", "forest creatures", "the animals"
+- Generic references: "creatures", "beings", "people", "folks", "crowd"
+- Unnamed background entities: "some rabbits", "a few deer", "the insects"
+- Collective nouns: "the flock", "the herd", "the pack"
+
+🔑 KEY RULE: If you cannot give it a single, specific NAME or TITLE, it is NOT a character!
+
+Examples of VALID characters:
+- "Kalu" (named crow from Context)
+- "Farmer" (individual with a title/role)
+- "Old Woman" (individual with descriptive title)
+- "Wise Owl" (individual with name/descriptor)
+- "The Golden Eagle" (individual with specific name)
+
+Examples of INVALID non-characters (DO NOT INCLUDE):
+- "little animals" (plural group - NO NAME)
+- "the birds" (plural group - NO NAME)
+- "some villagers" (plural group - NO NAME)
+- "forest creatures" (plural group - NO NAME)
+- "the children" (plural group - NO NAME)
 
 CRITICAL: The LAST segment is just as important as the first. Do NOT omit any fields in the final segment.
 
@@ -321,36 +336,54 @@ Every segment MUST include all of these fields:
 - scene_background (string, 2-3 detailed sentences)
 - emotions (list of strings, at least one)
 
-IMPORTANT - CHARACTER LISTING RULES:
-When populating the "characters" field, you MUST:
+⚠️⚠️⚠️ CRITICAL - CHARACTER LISTING RULES ⚠️⚠️⚠️
+
+When populating the "characters" field, you MUST follow these rules STRICTLY:
+
 1. Read the description, dialogue, and narration for that segment
-2. Extract ONLY individual named characters (people, animals, creatures with names)
+2. Extract ONLY NAMED INDIVIDUALS (people, animals, creatures with specific names or titles)
 3. Characters can come from Context section OR from the story itself
 4. If a character is in Context, they have type and traits defined
 5. If a character appears in the story but not in Context, they are still valid (include them!)
-6. Include all valid character names in the characters array
-7. Do NOT include plural groups, unnamed entities, or generic references
-8. Do NOT omit valid characters even if they're only mentioned briefly
+6. Include ALL valid character names in the characters array
+7. ❌ ABSOLUTELY NEVER include plural groups ("animals", "birds", "villagers", "children", "creatures")
+8. ❌ ABSOLUTELY NEVER include unnamed entities or generic references
+9. ✅ ONLY include named individuals with specific names or titles
+10. Do NOT omit valid named characters even if they're only mentioned briefly
 
-Examples of correct character listing:
-- Narration: "Kalu the crow showed the farmer the water" → characters: ["Kalu", "Farmer"] (both valid, even if "Farmer" not in Context)
-- Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman", "Kalu"]  
-- Description: "Kalu, the farmer, and the village elder meet" → characters: ["Kalu", "Farmer", "Village Elder"]
-- Narration: "Kalu thought about what the farmer had said" → characters: ["Kalu", "Farmer"]
+🔑 SIMPLE TEST: Can you point to ONE specific individual? If NO → NOT a character!
+
+Examples of CORRECT character listing:
+✅ Narration: "Kalu the crow showed the farmer the water" → characters: ["Kalu", "Farmer"]
+✅ Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman", "Kalu"]  
+✅ Description: "Kalu, the farmer, and the village elder meet" → characters: ["Kalu", "Farmer", "Village Elder"]
+✅ Narration: "Kalu thought about what the farmer had said" → characters: ["Kalu", "Farmer"]
 
 Examples of INCORRECT character listing (DO NOT DO THIS):
-- Narration: "Kalu showed the farmer the water" → characters: ["Kalu"] ❌ (Missing Farmer!)
-- Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman"] ❌ (Missing Kalu!)
+❌ Narration: "Kalu showed the farmer the water" → characters: ["Kalu"] (Missing Farmer!)
+❌ Dialogue: "'Hello!' said the old woman to Kalu" → characters: ["Old Woman"] (Missing Kalu!)
 
-Examples of CORRECT vs INCORRECT character identification:
-✅ CORRECT: Narration mentions "Leo and Mia saw some little animals" → characters: ["Leo", "Mia"]
-❌ INCORRECT: → characters: ["Leo", "Mia", "little animals"]
+⚠️ CRITICAL EXAMPLES - EXCLUDING PLURAL GROUPS ⚠️
 
-✅ CORRECT: Description says "The Golden Eagle flew above the forest creatures" → characters: ["Golden Eagle"]
-❌ INCORRECT: → characters: ["Golden Eagle", "forest creatures"]
+✅ CORRECT: "Leo and Mia saw some little animals" → characters: ["Leo", "Mia"]
+   ("little animals" is a PLURAL GROUP - NOT a character!)
+❌ WRONG: → characters: ["Leo", "Mia", "little animals"]
 
-✅ CORRECT: Dialogue: "'Look at the birds!' said Sam to Leo" → characters: ["Sam", "Leo"]
-❌ INCORRECT: → characters: ["Sam", "Leo", "the birds"]
+✅ CORRECT: "The Golden Eagle flew above the forest creatures" → characters: ["Golden Eagle"]
+   ("forest creatures" is a PLURAL GROUP - NOT a character!)
+❌ WRONG: → characters: ["Golden Eagle", "forest creatures"]
+
+✅ CORRECT: "'Look at the birds!' said Sam to Leo" → characters: ["Sam", "Leo"]
+   ("the birds" is a PLURAL GROUP - NOT a character!)
+❌ WRONG: → characters: ["Sam", "Leo", "the birds"]
+
+✅ CORRECT: "Kalu flew over the villagers and children" → characters: ["Kalu"]
+   ("villagers" and "children" are PLURAL GROUPS - NOT characters!)
+❌ WRONG: → characters: ["Kalu", "villagers", "children"]
+
+✅ CORRECT: "The Farmer spoke to the crowd of people" → characters: ["Farmer"]
+   ("crowd of people" is a PLURAL GROUP - NOT a character!)
+❌ WRONG: → characters: ["Farmer", "crowd", "people"]
 
 Example of a COMPLETE segment with ALL required fields:
 {{

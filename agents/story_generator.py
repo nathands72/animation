@@ -222,6 +222,13 @@ Context:
 Research Summary:
 {research_summary}
 
+STORY FIDELITY INSTRUCTIONS:
+If the Context above includes a specific 'Story Tale' and 'Plot', you MUST:
+1. Stick strictly to the original storyline, events, and meaningful details provided.
+2. Use the exact characters specified (names, roles, and traits) - do not invent new main characters or change their fundamental nature.
+3. Retell the *specific* story provided using the "Grandma" voice, rather than inventing a new story based on the theme.
+4. Ensure all key plot points from the input are included in your narration.
+
 ⚠️ CRITICAL INSTRUCTIONS:
 1. INTERNALLY perform the CONTENT POLICY CHECK on the above context (analyze, rewrite unsafe elements, confirm compliance)
 2. INTERNALLY perform the POST-GENERATION SAFETY VALIDATION on the completed story (verify all 20 checkpoints pass)
@@ -342,7 +349,7 @@ Write the story now in simple English with grandma's loving voice (600-900 words
         
         # Add story tale if available
         story_tale = context.get('story_tale')
-        if story_tale:
+        if story_tale and story_tale.lower() not in ["original", "n/a"]:
             parts.append(f"Story Tale: {story_tale}")
         
         parts.append(f"Setting: {context.get('setting', 'N/A')}")
